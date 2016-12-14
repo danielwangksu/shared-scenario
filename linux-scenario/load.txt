@@ -1,0 +1,3 @@
+{
+"Current Temperature" : "80", "Desired Temperature" : "65", "Fan status" : "1", "Alarm status" : "0", "Time" : "03:19:22 PM,2016-10-18"
+}
