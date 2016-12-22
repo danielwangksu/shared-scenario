@@ -22,7 +22,7 @@
 
 #define CONNMAX 100
 #define BYTES 1024
-#define CHILD_AC_ID 44
+#define CHILD_AC_ID 104
 
 
 char *ROOT;
@@ -103,6 +103,7 @@ void main(int argc, char **argv){
 void sendSetpointUpdate(int newsetpoint){
         m.m_type = SETPOINT_UPDATE;
         m.m_m1.m1i1 = newsetpoint;
+        printf("WEB: sendTEMPCONTROL: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
         ipc_sendrec(tempCnt_ep, &m);
 }
 

@@ -29,9 +29,10 @@ void initialize(){
 
 // receive command from tempControl endpoint
 int receiveCommandFromTempControl(){
-	int status;
-	ipc_receive(tempCnt_ep, &m, &status);
-	return status;
+	int r, status;
+	r = ipc_receive(tempCnt_ep, &m, &status);
+	printf("ALARM: receiveTEMPCONTROL: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+	return r;
 }
 
 // turn alarm ON
@@ -53,8 +54,6 @@ void handleCommand(){
 	if(m.m_type == ALARM_COMMAND)
 		command = m.m_m1.m1i1;
 
-	memset(&m, 0, sizeof(m));
-
 	switch(command){
 		case 0:
 			if(alarm_status == -1 || alarm_status == 1){
@@ -73,8 +72,11 @@ void handleCommand(){
 
 // send confirmation to tempControl process 
 void sendComfirmToTempControl(){
+	memset(&m, 0, sizeof(m));
 	m.m_type = ALARM_CONFIRM;
 	m.m_m1.m1i1 = alarm_status;
+
+	printf("ALARM: sendCONFIRM: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
 	ipc_send(tempCnt_ep, &m);
 }
 
@@ -83,7 +85,7 @@ void sendComfirmToTempControl(){
 ***************************************************************/
 void main(int argc, char **argv){
 
-	int status;
+	int r;
 
 	int paststatus = -1;
 	int currentstatus = -1;
@@ -92,8 +94,8 @@ void main(int argc, char **argv){
 	printf("ALARM: tempCnt_ep: %d\n", tempCnt_ep);
 
 	while(1){
-		status = receiveCommandFromTempControl();
-		if(status != OK){
+		r = receiveCommandFromTempControl();
+		if(r != OK){
 			continue;
 		}
 

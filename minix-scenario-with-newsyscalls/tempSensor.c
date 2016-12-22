@@ -40,7 +40,8 @@ const int sensordata[] =  {70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 80, 80, 8
 }
 
 int sendDataToTempControl(){
-	// uses non-blocking send 
+	printf("SENSOR: NBsend currentTemp: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
+	// uses non-blocking send
 	ipc_sendnb(tempCnt_ep, &m);
 }
 

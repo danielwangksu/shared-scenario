@@ -52,6 +52,7 @@ void initialize(){
 int receiveSensorData(){
 	int status, r;
 	r = ipc_receive(tempSen_ep, &m, &status);
+	printf("TEMPCONTROL: receiveSENSOR: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
 	return r;
 }
 
@@ -109,6 +110,8 @@ void controlAlarm(int status){
 	m.m_type = ALARM_COMMAND;
 	m.m_m1.m1i1 = status;
 
+	printf("TEMPCONTROL: sendAlarm: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
+
 	ipc_sendrec(alarmAct_ep, &m);
 	if(m.m_type == ALARM_CONFIRM)
 		alarm_status = m.m_m1.m1i1;
@@ -119,6 +122,8 @@ void controlHeater(int status){
 	memset(&m, 0, sizeof(m));
 	m.m_type = HEATER_COMMAND;
 	m.m_m1.m1i1 = status;
+
+	printf("TEMPCONTROL: sendHeater: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
 
 	ipc_sendrec(heatAct_ep, &m);
 	if(m.m_type == HEATER_CONFIRM)
@@ -137,6 +142,7 @@ int tryReceiveFromWeb(){
 	ep_poll(&check_ep);
 	if(check_ep.ready[0]){
 		r = ipc_receive(web_ep, &m, &status);
+		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
 	}
 
  	return r;
@@ -150,6 +156,7 @@ void updateSetpoint(){
 		new_setpoint = m.m_m1.m1i1;
 		if(new_setpoint > 60 && new_setpoint < 90){
 			setpoint = new_setpoint;
+			printf("tempControl: new setpoint is %d\n", setpoint);
 			r = 0;
 		}
 	}

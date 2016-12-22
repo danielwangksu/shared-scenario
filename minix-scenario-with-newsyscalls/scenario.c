@@ -76,6 +76,7 @@ void main(void){
 	}else{
 		// parent process
 		int tempSen_ep, tempCnt_ep, heatAct_ep, alarmAct_ep, web_ep;
+		int ret;
 		tempSen_ep = getendpoint(tempSen_pid); 
 		tempCnt_ep = getendpoint(tempCnt_pid);
 		heatAct_ep = getendpoint(heatAct_pid);
@@ -89,10 +90,14 @@ void main(void){
 		// wait for children to terminate, if one terminate then terminate all
 		t_pid = wait(&child_status);
 		printf("parent: child process(%d) terminated with exit status %d\n", t_pid, child_status);
-		kill(tempCnt_pid, 9);
-		kill(heatAct_pid, 9);
-		kill(alarmAct_pid, 9);
-		kill(web_pid, 9);
+		ret = kill(alarmAct_pid, 9);
+		printf("Parent: kill alarmAct return %d\n", ret);
+		ret = kill(heatAct_pid, 9);
+		printf("Parent: kill heatAct return %d\n", ret);
+		ret = kill(tempCnt_pid, 9);
+		printf("Parent: kill tempCnt return %d\n", ret);
+		ret = kill(web_pid, 9);
+		printf("Parent: kill web return %d\n", ret);
 		exit(1);
 	}
 
