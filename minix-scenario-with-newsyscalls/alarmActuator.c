@@ -73,7 +73,7 @@ void handleCommand(){
 // send confirmation to tempControl process 
 void sendComfirmToTempControl(){
 	memset(&m, 0, sizeof(m));
-	m.m_type = ALARM_CONFIRM;
+	m.m_type = CONTROL_CONFIRM;
 	m.m_m1.m1i1 = alarm_status;
 
 	printf("ALARM: sendCONFIRM: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
