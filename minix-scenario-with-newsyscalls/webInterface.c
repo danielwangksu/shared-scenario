@@ -29,6 +29,7 @@ char *ROOT;
 int listenfd, connfd;
 
 int tempCnt_ep;
+int ep_array[5] = {0};
 message m;
 
 void startServer(char *);
@@ -44,6 +45,25 @@ static void bail(const char *on_what) {
 void initialize(){
 	// setup tempControl endpoint
 	tempCnt_ep = getendpoint_name("tempControl");
+}
+
+// send children process's endpoints
+int send_ep_TempControl(){
+	memset(&m, 0, sizeof(m));
+	m.m_type = WEB_EP_UPDATE;
+	m.m_m7.m7i1 = ep_array[0];
+	m.m_m7.m7i2 = ep_array[1];
+	m.m_m7.m7i3 = ep_array[2];
+	m.m_m7.m7i4 = ep_array[3];
+	m.m_m7.m7i5 = ep_array[4];
+
+	printf("WebInterface: sendEPUpdate: m_type: %d, value: %d\n", m.m_type, m.m_m7.m7i1);
+
+	ipc_sendrec(tempCnt_ep, &m);
+	if(m.m_type == WEB_CONFIRM)
+		return 0;
+	else
+		return 1;
 }
 
 /**************************************************************
@@ -82,11 +102,18 @@ void main(int argc, char **argv){
     		}
 		}else if(pid > 0){
 			// parent process
+			ep_array[i] = getendpoint(pid);
 			printf("child pid is %d\n", pid);
 		}else{
 			bail("fork2()");
 		}
 	}
+
+	// tell tempControl its children process's endpoints
+	if(send_ep_TempControl()){
+		bail("send_ep_TempControl()");
+	}
+
 	while(1){
 		addrlen = sizeof(clientaddr);
         connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &addrlen);

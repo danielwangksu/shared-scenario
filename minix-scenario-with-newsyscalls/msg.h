@@ -12,6 +12,7 @@
 #define CONTROL_CONFIRM = 0;
 #define SENSOR_UPDATE = 1;
 #define SETPOINT_UPDATE = 2;
+#define WEB_EP_UPDATE = 3;
 
 // support functionality in HeaterActuator
 #define HEATER_CONFIRM = 0; // not used

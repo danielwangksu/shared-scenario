@@ -39,6 +39,8 @@ int alarm_status = -1;
 // current sensor temperature
 int current_temp = -1;
 
+int ep_array[5] = {0};
+
 // function for initialization
 void initialize(){
 	// setup tempControl endpoint
@@ -46,6 +48,21 @@ void initialize(){
 	heatAct_ep = getendpoint_name("heatActuator");
 	alarmAct_ep = getendpoint_name("alarmActuator");
 	web_ep = getendpoint_name("webInterface");
+}
+
+// receive web interface's children process endpoints
+int receive_ep_Web(){
+	int status, r;
+	r = ipc_receive(webInterface, &m, &status);
+	if(m_type == WEB_EP_UPDATE){
+		ep_array[0] = m.m_m7.m7i1;
+		ep_array[1] = m.m_m7.m7i2;
+		ep_array[2] = m.m_m7.m7i3;
+		ep_array[3] = m.m_m7.m7i4;
+		ep_array[4] = m.m_m7.m7i5;
+	}
+
+	printf("TEMPCONTROL: receiveEPUpdate: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m7.m7i1);
 }
 
 // receive sensor data from tempSensor process
@@ -136,12 +153,37 @@ int tryReceiveFromWeb(){
 	int status, r = -1;
 
 	memset(&check_ep, 0, sizeof check_ep);
-	check_ep.num = 1;
+	check_ep.num = 6;
 	check_ep.ep[0] = web_ep;
+	check_ep.ep[1] = ep_array[0];
+	check_ep.ep[2] = ep_array[1];
+	check_ep.ep[3] = ep_array[2];
+	check_ep.ep[4] = ep_array[3];
+	check_ep.ep[5] = ep_array[4];
 
 	ep_poll(&check_ep);
 	if(check_ep.ready[0]){
 		r = ipc_receive(web_ep, &m, &status);
+		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+	}
+	if(check_ep.ready[1]){
+		r = ipc_receive(ep_array[0], &m, &status);
+		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+	}
+	if(check_ep.ready[2]){
+		r = ipc_receive(ep_array[1], &m, &status);
+		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+	}
+	if(check_ep.ready[3]){
+		r = ipc_receive(ep_array[2], &m, &status);
+		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+	}
+	if(check_ep.ready[4]){
+		r = ipc_receive(ep_array[3], &m, &status);
+		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+	}
+	if(check_ep.ready[5]){
+		r = ipc_receive(ep_array[4], &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
 	}
 
@@ -195,6 +237,11 @@ void main(int argc, char **argv){
 
 	initialize();
 	printf("CONTROL: tempSen_ep: %d, heatAct_ep: %d, alarmAct_ep: %d, web_ep: %d\n", tempSen_ep, heatAct_ep, alarmAct_ep, web_ep);
+
+	r = receive_ep_Web();
+	if(r != OK){
+		bail("receive_ep_Web()");
+	}
 
 	while(1){
 		r = receiveSensorData();
