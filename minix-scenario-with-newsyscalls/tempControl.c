@@ -50,6 +50,16 @@ void initialize(){
 	web_ep = getendpoint_name("webInterface");
 }
 
+// send confirmation to webInterface process 
+void sendComfirmToWeb(){
+	memset(&m, 0, sizeof(m));
+	m.m_type = WEB_CONFIRM;
+	m.m_m1.m1i1 = 1;
+
+	printf("TEMPCONTROL: sendCONFIRM: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
+	ipc_send(web_ep, &m);
+}
+
 // receive web interface's children process endpoints
 int receive_ep_Web(){
 	int status, r;
@@ -61,8 +71,8 @@ int receive_ep_Web(){
 		ep_array[3] = m.m_m7.m7i4;
 		ep_array[4] = m.m_m7.m7i5;
 	}
-
 	printf("TEMPCONTROL: receiveEPUpdate: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m7.m7i1);
+	sendComfirmToWeb();
 }
 
 // receive sensor data from tempSensor process

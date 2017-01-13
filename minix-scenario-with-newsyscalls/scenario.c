@@ -89,7 +89,7 @@ void main(void){
 
 		// wait for children to terminate, if one terminate then terminate all
 		t_pid = wait(&child_status);
-		printf("parent: child process(%d) terminated with exit status %d\n", t_pid, child_status);
+		printf("Parent: child process(%d) terminated with exit status %d\n", t_pid, child_status);
 		ret = kill(alarmAct_pid, 9);
 		printf("Parent: kill alarmAct return %d\n", ret);
 		ret = kill(heatAct_pid, 9);

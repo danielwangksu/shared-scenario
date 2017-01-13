@@ -34,9 +34,9 @@ typedef struct {
 
 // they should be replaced with bitchunk_t type variables.
 unsigned short v1 = 1; // only f0 is allowed (for server return)
-unsigned short v2 = 2; // only f1 is allowed (for server return)
-unsigned short v4 = 4; // only f2 is allowed (for server return)
-
+unsigned short v2 = 2; // only f1 is allowed 
+unsigned short v4 = 4; // only f2 is allowed 
+unsigned short v16 = 16; // f3 and f2 are allowed (for web interface)
 
 ac_receiver_entry tempSensor_entry[1] = {{TEMPCOT_ACID, 1, &v2}};
 
@@ -48,7 +48,7 @@ ac_receiver_entry tempControl_entry[3] =  {
 
 ac_receiver_entry heatActuator_entry[1] = {{TEMPCOT_ACID, 1, &v1}};
 ac_receiver_entry alarmActuator_entry[1] = {{TEMPCOT_ACID, 1, &v1}};
-ac_receiver_entry webInterface_entry[1] = {{TEMPCOT_ACID, 1, &v4}};
+ac_receiver_entry webInterface_entry[1] = {{TEMPCOT_ACID, 2, &v16}};
 
 ac_sender_entry access_control_matrix[NR_AC_PROCESSES] = {
   {1, tempSensor_entry},
