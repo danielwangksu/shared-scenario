@@ -20,12 +20,15 @@
 #include <time.h>
 #include "msg.h"
 
+//defined for system calls used to trigger the GPIO ports
+int system(const char *command);
+
 // message data structure (OS define type)  
 message m;
 // endpoints for each process
 int tempSen_ep, heatAct_ep, alarmAct_ep, web_ep;
 // desired temperature setpoint
-int setpoint = 75;
+int setpoint = 29;
 // timer threshold
 time_t const time_threshold = 60; // 1 mins
 // timer
@@ -40,6 +43,11 @@ int alarm_status = -1;
 int current_temp = -1;
 
 int ep_array[5] = {0};
+
+static void bail(const char *on_what) {
+	perror(on_what);
+	exit(1); 
+}
 
 // function for initialization
 void initialize(){
@@ -63,8 +71,8 @@ void sendComfirmToWeb(){
 // receive web interface's children process endpoints
 int receive_ep_Web(){
 	int status, r;
-	r = ipc_receive(webInterface, &m, &status);
-	if(m_type == WEB_EP_UPDATE){
+	r = ipc_receive(web_ep, &m, &status);
+	if(m.m_type == WEB_EP_UPDATE){
 		ep_array[0] = m.m_m7.m7i1;
 		ep_array[1] = m.m_m7.m7i2;
 		ep_array[2] = m.m_m7.m7i3;
@@ -86,7 +94,7 @@ int receiveSensorData(){
 // control logic (0 within range, 1 too hot, -1 too cold)
 int handleCommand(){
 	int data = 0, delta = 0;
-	int threshold = 3;
+	int threshold = 1;
 
 	if(m.m_type == SENSOR_UPDATE)
 		data = m.m_m1.m1i1;
@@ -95,18 +103,45 @@ int handleCommand(){
 
 	memset(&m, 0, sizeof(m));
 
+/***** The RGB LED works in the opposite way the lights glows 
+	when the respective wires are grounded but as we are 
+	connecting to the GPIO pins so when the pins are turned OFF
+	the LED glows and when its ON the LED remains in off state 
+	GPIO1 - Fan
+	GPIO2 - Red Light in the RGB LED
+	GPIO3 - Green Light on the RGB LED
+	GPIO4 - Blue Light on the RGB LED
+*****/
+ 
 	if(data > setpoint){
 		// too hot
-		delta = (data - setpoint);
-		if(delta > threshold)
-			return 1;
-
+		delta = (data - setpoint);				
+		if(delta > threshold){
+		/* The following system calls are used to turn on and off the LED and the Fan
+			system("cat /gpio/GPIO1On");
+                	system("cat /gpio/GPIO2Off");
+                	system("cat /gpio/GPIO3On");
+                	system("cat /gpio/GPIO4On");*/
+                	//delta = (data - setpoint);
+			return 1;}
 	}else{
 		// too cold
 		delta = (data - setpoint);
-		if(delta < threshold)
-			return -1;
+		//if(delta < threshold)
+		if(data < (setpoint - threshold)){
+		/* The following system calls are used to turn on and off the LED and the Fan			
+			system("cat /gpio/GPIO1Off");
+                	system("cat /gpio/GPIO2On");
+                	system("cat /gpio/GPIO3On");
+                	system("cat /gpio/GPIO4Off");*/
+                	//delta = (data - setpoint);
+			return -1;}
 	}
+	/* The following system calls are used to turn on and off the LED and the Fan	
+	system("cat /gpio/GPIO1Off");
+	system("cat /gpio/GPIO2On");
+	system("cat /gpio/GPIO3Off");
+	system("cat /gpio/GPIO4On");*/
 	return 0;
 }
 
