@@ -29,6 +29,8 @@ message m;
 int tempSen_ep, heatAct_ep, alarmAct_ep, web_ep;
 // desired temperature setpoint
 int setpoint = 29;
+// variable for storing changed setpoint
+int temp_point = 0;
 // timer threshold
 time_t const time_threshold = 60; // 1 mins
 // timer
@@ -59,13 +61,13 @@ void initialize(){
 }
 
 // send confirmation to webInterface process 
-void sendComfirmToWeb(){
+void sendComfirmToWeb(int ep){
 	memset(&m, 0, sizeof(m));
 	m.m_type = WEB_CONFIRM;
 	m.m_m1.m1i1 = 1;
 
 	printf("TEMPCONTROL: sendCONFIRM: m_type: %d, value: %d\n", m.m_type, m.m_m1.m1i1);
-	ipc_send(web_ep, &m);
+	ipc_send(ep, &m);
 }
 
 // receive web interface's children process endpoints
@@ -79,8 +81,8 @@ int receive_ep_Web(){
 		ep_array[3] = m.m_m7.m7i4;
 		ep_array[4] = m.m_m7.m7i5;
 	}
-	printf("TEMPCONTROL: receiveEPUpdate: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m7.m7i1);
-	sendComfirmToWeb();
+	printf("TEMPCONTROL: receiveEPUpdate: status: %d, m_type: %d, value: %d, %d, %d, %d, %d\n", status, m.m_type, m.m_m7.m7i1, m.m_m7.m7i2, m.m_m7.m7i3, m.m_m7.m7i4, m.m_m7.m7i5);
+	sendComfirmToWeb(web_ep);
 }
 
 // receive sensor data from tempSensor process
@@ -210,26 +212,44 @@ int tryReceiveFromWeb(){
 	if(check_ep.ready[0]){
 		r = ipc_receive(web_ep, &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+		if(m.m_type == SETPOINT_UPDATE)
+			temp_point = m.m_m1.m1i1;
+		sendComfirmToWeb(web_ep);
 	}
 	if(check_ep.ready[1]){
 		r = ipc_receive(ep_array[0], &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+		if(m.m_type == SETPOINT_UPDATE)
+			temp_point = m.m_m1.m1i1;
+		sendComfirmToWeb(ep_array[0]);
 	}
 	if(check_ep.ready[2]){
 		r = ipc_receive(ep_array[1], &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+		if(m.m_type == SETPOINT_UPDATE)
+			temp_point = m.m_m1.m1i1;
+		sendComfirmToWeb(ep_array[1]);
 	}
 	if(check_ep.ready[3]){
 		r = ipc_receive(ep_array[2], &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+		if(m.m_type == SETPOINT_UPDATE)
+			temp_point = m.m_m1.m1i1;
+		sendComfirmToWeb(ep_array[2]);
 	}
 	if(check_ep.ready[4]){
 		r = ipc_receive(ep_array[3], &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+		if(m.m_type == SETPOINT_UPDATE)
+			temp_point = m.m_m1.m1i1;
+		sendComfirmToWeb(ep_array[3]);
 	}
 	if(check_ep.ready[5]){
 		r = ipc_receive(ep_array[4], &m, &status);
 		printf("TEMPCONTROL: receiveWEB: status: %d, m_type: %d, value: %d\n", status, m.m_type, m.m_m1.m1i1);
+		if(m.m_type == SETPOINT_UPDATE)
+			temp_point = m.m_m1.m1i1;
+		sendComfirmToWeb(ep_array[4]);
 	}
 
  	return r;
@@ -237,21 +257,13 @@ int tryReceiveFromWeb(){
 
 // update setpoint to the new value with sanity check
 void updateSetpoint(){
-	int new_setpoint, r = -1;
+	int r = -1;
 
-	if(m.m_type == SETPOINT_UPDATE){
-		new_setpoint = m.m_m1.m1i1;
-		if(new_setpoint > 60 && new_setpoint < 90){
-			setpoint = new_setpoint;
-			printf("tempControl: new setpoint is %d\n", setpoint);
-			r = 0;
-		}
+	if(temp_point > 10 && temp_point < 35 ){
+		setpoint = temp_point;
+		printf("tempControl: new setpoint is %d\n", setpoint);
+		r = 0;
 	}
-
-	memset(&m, 0, sizeof(m));
-	m.m_type = WEB_CONFIRM;
-	m.m_m1.m1i1 = r;
-	ipc_sendnb(web_ep, &m);
 }
 
 //update log file in JSON format

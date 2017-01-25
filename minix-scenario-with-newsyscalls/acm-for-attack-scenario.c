@@ -1,6 +1,6 @@
 #include "ac_realm.h"
 // if you want to bypass the access control, change ENABLE_ACM 0 0
-#define ENABLE_ACM	0
+#define ENABLE_ACM	1
 
 typedef struct {
   int receiver_acid;
@@ -22,7 +22,7 @@ typedef struct {
 #define TEMPCOT_ACID (FIRST_ACID + 1)
 #define HEATACT_ACID (FIRST_ACID + 2) 
 #define ALARACT_ACID (FIRST_ACID + 3) 
-#define WEBINTF_ACID (FIRST_ACID + 3) 
+#define WEBINTF_ACID (FIRST_ACID + 4) 
 
 // #define NR_SERVER_FUNCTIONS 5
 // #define function0 0
@@ -38,17 +38,17 @@ unsigned short v2 = 2; // only f1 is allowed
 unsigned short v4 = 4; // only f2 is allowed 
 unsigned short v12 = 12; // f3 and f2 are allowed (for web interface)
 
-ac_receiver_entry tempSensor_entry[1] = {{TEMPCOT_ACID, 1, &v2}};
+ac_receiver_entry tempSensor_entry[1] = {{TEMPCOT_ACID, 4, &v2}};
 
 ac_receiver_entry tempControl_entry[3] =  {
-  {HEATACT_ACID, 1, &v2},
-  {ALARACT_ACID, 1, &v2},
+  {HEATACT_ACID, 2, &v2},
+  {ALARACT_ACID, 2, &v2},
   {WEBINTF_ACID, 1, &v1},
 };
 
-ac_receiver_entry heatActuator_entry[1] = {{TEMPCOT_ACID, 1, &v1}};
-ac_receiver_entry alarmActuator_entry[1] = {{TEMPCOT_ACID, 1, &v1}};
-ac_receiver_entry webInterface_entry[1] = {{TEMPCOT_ACID, 2, &v12}};
+ac_receiver_entry heatActuator_entry[1] = {{TEMPCOT_ACID, 4, &v1}};
+ac_receiver_entry alarmActuator_entry[1] = {{TEMPCOT_ACID, 4, &v1}};
+ac_receiver_entry webInterface_entry[1] = {{TEMPCOT_ACID, 4, &v12}};
 
 ac_sender_entry access_control_matrix[NR_AC_PROCESSES] = {
   {1, tempSensor_entry},

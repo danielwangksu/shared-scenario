@@ -44,7 +44,6 @@ int fanStatus = 0;
 
 //variable to store the pressure value
 float pressureValue;
-int i = 0;
 int serv_stat;
 
 /************** Variables related to BMP Sensor - END ********************/

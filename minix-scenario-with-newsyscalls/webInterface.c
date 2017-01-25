@@ -57,7 +57,7 @@ int send_ep_TempControl(){
 	m.m_m7.m7i4 = ep_array[3];
 	m.m_m7.m7i5 = ep_array[4];
 
-	printf("WebInterface: sendEPUpdate: m_type: %d, value: %d\n", m.m_type, m.m_m7.m7i1);
+	printf("WebInterface: sendEPUpdate: m_type: %d, value: %d, %d, %d, %d, %d\n", m.m_type, m.m_m7.m7i1, m.m_m7.m7i2, m.m_m7.m7i3, m.m_m7.m7i4, m.m_m7.m7i5);
 
 	ipc_sendrec(tempCnt_ep, &m);
 	if(m.m_type == WEB_CONFIRM)
