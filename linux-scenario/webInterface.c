@@ -259,9 +259,9 @@ void handlePost(int n){
 void respond(int n){
 
 	char mesg[99999], *reqline[3];
-	int rcvd;
+	int rcvd, pid;
 
-
+	pid = getpid();
 	memset((void*)mesg, (int)'\0', 99999);
 
 	rcvd = recv(n, mesg, 99999, 0);
