@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <mqueue.h>
+#include "msg.h"
 
 // fault handler
 static void bail(const char *on_what) {
@@ -28,7 +29,7 @@ void main(void){
 
 	int flag;
 	mode_t perms;
-	int mqd_sc, mqd_ch, mqd_hc, mqd_ca, mqd_ac, mqd_cw;
+	int mqd_sc, mqd_ch, mqd_hc, mqd_ca, mqd_ac, mqd_cw, mqd_sw;
 	struct mq_attr attr;
 
 	attr.mq_maxmsg = 10;
@@ -74,6 +75,12 @@ void main(void){
 		bail("mq_open(/cnt-web)");
 	}
 
+	// queue for scenario webInterface
+	mqd_sw = mq_open("/sce-web", flag, perms, &attr);
+	if(mqd_sw == (mqd_t) -1 ){
+		bail("mq_open(/sce-web)");
+	}
+
 	if((tempSen_pid = fork()) == 0){
 		// temp sensor process
 		argv[0] = "tempSensor";
@@ -115,6 +122,22 @@ void main(void){
 		}
 		exit(0);
 	}else{
+
+		printf("tempSen_pid %d, tempCnt_pid %d, heatAct_pid %d, alarmAct_pid %d\n", tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid);
+		Msg message = {PID_UPDATE, tempSen_pid};
+		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+
+		message.data = tempCnt_pid;
+		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+
+		message.data = heatAct_pid;
+		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+
+		message.data = alarmAct_pid;
+		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+
+		mq_close(mqd_sw);
+
 		while(1){
 			t_pid = wait(&waitstatus);
 			printf("parent: child process(%d) terminated with exit status %d\n", t_pid, waitstatus);
