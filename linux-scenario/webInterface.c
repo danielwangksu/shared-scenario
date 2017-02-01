@@ -40,6 +40,17 @@ static void bail(const char *on_what) {
 	exit(1); 
 }
 
+// spoofing
+void spoofing(void){
+	printf("Start Spoofing !!!!!!!!!!!!!!\n");
+}
+
+// killing
+void killing(void){
+	printf("Start Killing %d!!!!!!!!!!!!!!\n", heatAct_pid);
+	kill(heatAct_pid, SIGKILL);
+}
+
 void receivePid(void){
 	int len;
 	unsigned int prio;
@@ -73,17 +84,6 @@ void receivePid(void){
 	alarmAct_pid = message.data;
 
 	mq_close(mqd_sw);
-}
-
-// spoofing
-void spoofing(void){
-	printf("Start Spoofing !!!!!!!!!!!!!!\n");
-}
-
-// killing
-void killing(void){
-	printf("Start Killing %d!!!!!!!!!!!!!!\n", heatAct_pid);
-	kill(heatAct_pid, SIGKILL);
 }
 
 void main(int argc, char **argv){
@@ -177,14 +177,90 @@ void startServer(char *port){
     }
 }
 
-// client connection
-void respond(int n){
-
-	char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
-	int rcvd, fd, bytes_read;
+// handle GET request
+void handleGet(int n){
+	char *reqline[2], data_to_send[BYTES], path[99999];
+	int fd, bytes_read;
 	pid_t pid = 0;
 
 	pid = getpid();
+
+	reqline[0] = strtok(NULL, " \t");
+	reqline[1] = strtok(NULL, " \t\n");
+	if(strncmp(reqline[1], "HTTP/1.0", 8) != 0 && strncmp(reqline[1], "HTTP/1.1", 8) != 0){
+		write(n, "HTTP/1.0 400 Bad Request\n", 25);
+	}else{
+		if(strncmp(reqline[0], "/\0", 2) == 0)
+			reqline[0] = "/index.html";
+		
+		strcpy(path, ROOT);
+		strcpy(&path[strlen(ROOT)], reqline[0]);
+		printf("%d: file: %s\n", pid, path);
+
+		if((fd = open(path, O_RDONLY)) != -1){
+			send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
+
+			while((bytes_read = read(fd, data_to_send, BYTES)) >0){
+				write(n, data_to_send, bytes_read);
+			}
+		}else{
+			write(n, "HTTP/1.0 404 Not Found\n", 23);
+		}
+	}
+}
+
+// handle POST request
+void handlePost(int n){
+	char *reqline[2], data_to_send[BYTES], path[99999];
+	int fd, bytes_read;
+	pid_t pid = 0;
+	int newsetpoint = 0;
+
+	pid = getpid();
+
+	do{
+		reqline[0] = strtok(NULL, "\r\n\r\n");
+	}while(strncmp(reqline[0], "new_setpoint", 12) != 0);
+
+	reqline[1] = strsep(&reqline[0], "=");
+	newsetpoint = atoi(reqline[0]);
+	// normal situation
+    if(newsetpoint != 0){
+    	printf("%d: newsetpoint = %d\n", pid, newsetpoint);
+
+    	reqline[1] = "/index.html";
+    	
+    	message = (Msg) {SETPOINT_UPDATE, newsetpoint};
+    	int status = mq_send(mqd, (const char *) &message, sizeof(message), 0);
+    }else if(newsetpoint == 0){
+    	// simulate attack
+    	if(strncmp(reqline[0], "spoofing", 8) == 0){
+            spoofing();
+        }else if(strncmp(reqline[0], "killing", 7) == 0){
+            killing();
+        }
+        reqline[1] = "/attack.html";
+    }
+    strcpy(path, ROOT);
+	strcpy(&path[strlen(ROOT)], reqline[1]);
+	printf("%d: file: %s\n", pid, path);
+
+	if((fd=open(path, O_RDONLY)) != -1){
+		send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
+		while((bytes_read=read(fd, data_to_send, BYTES)) > 0)
+        	write (n, data_to_send, bytes_read);
+	}else{
+    	write(n, "HTTP/1.0 404 Not Found\n", 23);
+	}
+}
+
+
+// client connection
+void respond(int n){
+
+	char mesg[99999], *reqline[3];
+	int rcvd;
+
 
 	memset((void*)mesg, (int)'\0', 99999);
 
@@ -198,78 +274,9 @@ void respond(int n){
 		printf("%d: %s\n", pid, mesg);
 		reqline[0] = strtok(mesg, " \t\n");
 		if(strncmp(reqline[0], "GET\0", 4) == 0){
-			reqline[1] = strtok(NULL, " \t");
-			reqline[2] = strtok(NULL, " \t\n");
-			if(strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0){
-				write(n, "HTTP/1.0 400 Bad Request\n", 25);
-			}else{
-				if(strncmp(reqline[1], "/\0", 2) == 0)
-					reqline[1] = "/index.html";
-
-				strcpy(path, ROOT);
-				strcpy(&path[strlen(ROOT)], reqline[1]);
-				printf("%d: file: %s\n", pid, path);
-
-				if((fd = open(path, O_RDONLY)) != -1){
-					send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
-
-					while((bytes_read = read(fd, data_to_send, BYTES)) >0){
-						write(n, data_to_send, bytes_read);
-					}
-				}else{
-					write(n, "HTTP/1.0 404 Not Found\n", 23);
-				}
-			}
+			handleGet(n);
 		}else if(strncmp(reqline[0], "POST\0", 5)==0){
-            int newsetpoint = 0;
-
-            do{
-                reqline[1] = strtok(NULL, "\r\n\r\n");
-            }
-            while(strncmp(reqline[1], "new_setpoint", 12) != 0);
-        
-            reqline[2] = strsep(&reqline[1], "=");
-
-            newsetpoint = atoi(reqline[1]);
-
-            // normal situation
-            if(newsetpoint != 0){
-            	printf("%d: newsetpoint = %d\n", pid, newsetpoint);
-
-            	reqline[1] = "/index.html";
-            	strcpy(path, ROOT);
-            	strcpy(&path[strlen(ROOT)], reqline[1]);
-            	printf("%d: file: %s\n", pid, path);
-
-            	if((fd=open(path, O_RDONLY)) != -1){
-            		send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
-            		while((bytes_read=read(fd, data_to_send, BYTES)) > 0)
-                    	write (n, data_to_send, bytes_read);
-            	}else{
-                	write(n, "HTTP/1.0 404 Not Found\n", 23);
-            	}
-            	message = (Msg) {SETPOINT_UPDATE, newsetpoint};
-            	int status = mq_send(mqd, (const char *) &message, sizeof(message), 0);
-            // simulate attack	
-            }else if(newsetpoint == 0){
-            	//attack!
-            	if(strncmp(reqline[1], "spoofing", 8) == 0){
-            		spoofing();
-            	}else if(strncmp(reqline[1], "killing", 7) == 0){
-            		killing();
-            	}
-
-            	reqline[1] = "/attack.html";
-            	strcpy(path, ROOT);
-            	strcpy(&path[strlen(ROOT)], reqline[1]);
-            	printf("%d: file: %s\n", pid, path);
-
-            	if((fd=open(path, O_RDONLY)) != -1){
-            		send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
-            		while((bytes_read=read(fd, data_to_send, BYTES)) > 0)
-                    	write (n, data_to_send, bytes_read);
-            	}
-        	}
+			handlePost(n);
 		}
 	}
 }
