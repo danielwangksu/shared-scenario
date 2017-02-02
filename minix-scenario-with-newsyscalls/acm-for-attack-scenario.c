@@ -14,7 +14,7 @@ typedef struct {
 } ac_sender_entry;
 
 #define FIRST_ACID  100
-#define NR_AC_PROCESSES 5
+#define NR_AC_PROCESSES 6
 
 #define LAST_ACID (FIRST_ACID + NR_AC_PROCESSES - 1)
 
@@ -22,7 +22,8 @@ typedef struct {
 #define TEMPCOT_ACID (FIRST_ACID + 1)
 #define HEATACT_ACID (FIRST_ACID + 2) 
 #define ALARACT_ACID (FIRST_ACID + 3) 
-#define WEBINTF_ACID (FIRST_ACID + 4) 
+#define WEBINTF_ACID (FIRST_ACID + 4)
+#define VPM_ACID (FIRST_ACID + 5) 
 
 // #define NR_SERVER_FUNCTIONS 5
 // #define function0 0
@@ -48,12 +49,14 @@ ac_receiver_entry tempControl_entry[3] =  {
 
 ac_receiver_entry heatActuator_entry[1] = {{TEMPCOT_ACID, 4, &v1}};
 ac_receiver_entry alarmActuator_entry[1] = {{TEMPCOT_ACID, 4, &v1}};
-ac_receiver_entry webInterface_entry[1] = {{TEMPCOT_ACID, 4, &v12}};
+ac_receiver_entry webInterface_entry[2] = {{TEMPCOT_ACID, 4, &v12}, {VPM_ACID, 2, &v2}};
+ac_receiver_entry vpm_entry[1] = {{WEBINTF_ACID, 1, &v1}};
 
 ac_sender_entry access_control_matrix[NR_AC_PROCESSES] = {
   {1, tempSensor_entry},
   {3, tempControl_entry},
   {1, heatActuator_entry},
   {1, alarmActuator_entry},
-  {1, webInterface_entry}
+  {1, webInterface_entry},
+  {1, vpm_entry}
 };
