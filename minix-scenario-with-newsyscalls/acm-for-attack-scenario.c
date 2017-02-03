@@ -57,6 +57,6 @@ ac_sender_entry access_control_matrix[NR_AC_PROCESSES] = {
   {3, tempControl_entry},
   {1, heatActuator_entry},
   {1, alarmActuator_entry},
-  {1, webInterface_entry},
+  {2, webInterface_entry},
   {1, vpm_entry}
 };
