@@ -45,10 +45,6 @@ void main(int argc, char **argv){
 	if(initSensor() != 0)
 		exit(1);
 	
-	//Sid : call the openDevicefile function	
-	if(openDevicefile() != 0)
-		exit(1);
-	
 	mqd_sc = mq_open("/sen-cnt", flag);
 	if(mqd_sc == (mqd_t) -1 )
 		bail("ts: mq_open(/sen-cnt)");
@@ -56,12 +52,13 @@ void main(int argc, char **argv){
 	printf("tempSensor is loaded\n");
 
 	while(1){
+		// //Sid : rewind the device file to read the updated data		
+		// rewind(fp);		
 
-		//Sid : rewind the device file to read the updated data		
-		rewind(fp);		
-
-		sleep(4);
+		sleep(5);
 		
+		if(openDevicefile() != 0)
+			exit(1);
 		//Sid : call the readDevicefile to read the data and convert to an int of 3 digits the last digit is after the decimal//
 		data = readDevicefile();
 		printf("tempSensor: sending %d\n", data);
@@ -105,12 +102,11 @@ int openDevicefile(){
 /*Sid : function to read the BMP180 sensor device file- START*/
 int readDevicefile(){
 	int tempval;
-	rewind(fp);	
 	if((fgets(buf, MAX_BUF, fp)) == NULL){
 		printf("cannot read device file\n");
-		fflush(fp);
-		fclose(fp);
 	}
+		//fflush(fp);
+		fclose(fp);
 	tempval = atoi(buf);
 	printf("Current Temperature: %d\n",tempval);
 	return tempval;

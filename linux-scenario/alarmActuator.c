@@ -15,16 +15,57 @@
 #include <mqueue.h>
 #include "msg.h"
 
+#define ON 1
+#define OK 0
+#define OFF 0
+#define LED_RED 112
+#define LED_GREEN 15
+#define LED_BLUE 14
+#define MAX_BUF 64
+
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
 	exit(1); 
 }
 
+// function for change GPIO device
+int gpioChange(int gpio,int value){
+	FILE *gfp;
+	char path[MAX_BUF];
+	//Open a file to the specified GPIO and write the values of either 0 or $
+	snprintf(path, sizeof path, "/sys/class/gpio/gpio%d/value",gpio);
+	printf("\nGPIO path is : %s Value : %d\n",path,value);
+	if((gfp = fopen(path,"w")) == NULL){
+		printf("file open failed");
+		return 1;
+	}
+	rewind(gfp);
+	fprintf(gfp, "%d", value);
+	fflush(gfp);
+	fclose(gfp);
+	return 0;
+}
+
+void setLED(int alarm_status){
+	int ret;
+	if(alarm_status == ON){
+		ret = gpioChange(LED_BLUE,OFF);
+		ret = gpioChange(LED_GREEN,OFF);
+		ret = gpioChange(LED_RED,ON);
+	}
+	if(alarm_status == OFF){
+		ret = gpioChange(LED_RED,OFF);
+		ret = gpioChange(LED_BLUE,OFF);
+		ret = gpioChange(LED_GREEN,ON);
+
+	}
+}
+
 void main(int argc, char **argv){
 	mqd_t mqd_ca, mqd_ac;
 	int prio = 0;
-	int status;
+	int status, retval;
 	int flag = O_RDONLY;
 	int rwflag = O_RDWR;
 	ssize_t len;
@@ -54,6 +95,8 @@ void main(int argc, char **argv){
 		if(message.type == ALARM_COMMAND){
 			past_alarm_status = alarm_status;
 			alarm_status = message.data;
+
+			setLED(alarm_status);
 
 			printf("alarmActuator: old_status=%d, current_status=%d\n", past_alarm_status, alarm_status);
 

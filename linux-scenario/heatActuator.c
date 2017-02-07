@@ -16,16 +16,40 @@
 #include <math.h>
 #include "msg.h"
 
+#define ON 1
+#define OK 0
+#define OFF 0
+#define FAN 115
+#define MAX_BUF 64
+
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
 	exit(1); 
 }
 
+// function for change GPIO device
+int gpioChange(int gpio,int value){
+	FILE *gfp;
+	char path[MAX_BUF];
+	//Open a file to the specified GPIO and write the values of either 0 or $
+	snprintf(path, sizeof path, "/sys/class/gpio/gpio%d/value",gpio);
+	printf("\nGPIO path is : %s Value : %d\n",path,value);
+	if((gfp = fopen(path,"w")) == NULL){
+		printf("file open failed");
+		return 1;
+	}
+	rewind(gfp);
+	fprintf(gfp, "%d", value);
+	fflush(gfp);
+	fclose(gfp);
+	return 0;
+}
+
 void main(int argc, char **argv){
 	mqd_t mqd_ch, mqd_hc;
 	int prio = 0;
-	int status;
+	int status, retval;
 	int flag = O_RDONLY;
 	int rwflag = O_RDWR;
 	ssize_t len;
@@ -55,7 +79,7 @@ void main(int argc, char **argv){
 		if(message.type == HEATER_COMMAND){
 			past_heater_status = heater_status;
 			heater_status = message.data;
-
+			retval = gpioChange(FAN, heater_status);
 			printf("heatActuator: old_status=%d, current_status=%d\n", past_heater_status, heater_status);
 
 			Msg message_return = {HEATER_CONFIRM, heater_status};

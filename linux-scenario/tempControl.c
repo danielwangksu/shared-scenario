@@ -31,8 +31,9 @@
 float itof(int);
 int gpioChange(int gpio, int value);
 
-float const threshold = 0.2;
-time_t const time_threshold = 30; // 30 seconds
+static volatile int keepRunning = 1;
+float const threshold = 1.0;
+time_t const time_threshold = 60; // 1 min
 float delta = 0.0;
 float setpoint = 27.0;
 
@@ -247,20 +248,31 @@ void update_setpoint(){
 	}
 }
 
+void intHandler(int dummy){
+	int ret;
+
+	ret = gpioChange(LED_BLUE,OFF);
+	ret = gpioChange(LED_GREEN,OFF);
+	ret = gpioChange(LED_RED,OFF);
+	keepRunning = 0;
+}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *       main function                           *
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 void main(int argc, char **argv){
 	ssize_t len;
 	unsigned int prio;
-	int status, retval;
+	int status;
 
 	// initialize message queue
 	open_mq();
 
 	printf("tempContol is loaded\n");
 
-	while(1){
+	signal(SIGINT, intHandler);
+
+	while(keepRunning){
 		len = mq_receive(mqd_sc, (char *) &message_sc, attr_sc.mq_msgsize, &prio);
 		if(len == -1)
 			bail("tc: mq_receive(mqd_sc)");
