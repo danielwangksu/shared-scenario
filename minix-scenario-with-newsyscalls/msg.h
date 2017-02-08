@@ -24,3 +24,7 @@
 
 // support functionality in WebInterface 
 #define WEB_CONFIRM  0
+
+// support functionality in VirtualPM
+#define VPM_CONFIRM  0
+#define VPM_DOKILL  1

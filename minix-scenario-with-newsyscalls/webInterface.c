@@ -30,7 +30,6 @@ char PORT[6];
 int listenfd, connfd;
 
 int scenario_ep, tempSen_ep, tempCnt_ep, heatAct_ep, alarmAct_ep, vpm_ep;
-int tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid;
 int ep_array[5] = {0};
 message m;
 
@@ -81,8 +80,8 @@ int killep(int ep){
 // killing
 void killing(void){
 	int r;
-	printf("Start Killing %d !!!!!!!!!!!!!!\n", heatAct_pid);
-	r = killep(heatAct_pid);
+	printf("Start Killing %d !!!!!!!!!!!!!!\n", heatAct_ep);
+	r = killep(heatAct_ep);
 }
 
 
