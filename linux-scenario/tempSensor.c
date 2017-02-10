@@ -105,8 +105,8 @@ int readDevicefile(){
 	if((fgets(buf, MAX_BUF, fp)) == NULL){
 		printf("cannot read device file\n");
 	}
-		//fflush(fp);
-		fclose(fp);
+	//fflush(fp);
+	fclose(fp);
 	tempval = atoi(buf);
 	printf("Current Temperature: %d\n",tempval);
 	return tempval;

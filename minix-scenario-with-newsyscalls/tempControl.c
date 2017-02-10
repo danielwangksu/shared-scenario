@@ -4,7 +4,9 @@
 ***************************************************************/
 
 #define _MINIX_SYSTEM 1
+#define ON 1
 #define OK 0
+#define OFF 0
 
 #include <minix/endpoint.h>
 #include <stdio.h>
@@ -20,17 +22,14 @@
 #include <time.h>
 #include "msg.h"
 
-//defined for system calls used to trigger the GPIO ports
-int system(const char *command);
-
 // message data structure (OS define type)  
 message m;
 // endpoints for each process
 int tempSen_ep, heatAct_ep, alarmAct_ep, web_ep;
 // desired temperature setpoint
-int setpoint = 29;
+float setpoint = 27.0;
 // variable for storing changed setpoint
-int temp_point = 0;
+float temp_point = 0.0;
 // timer threshold
 time_t const time_threshold = 60; // 1 mins
 // timer
@@ -42,13 +41,22 @@ int heater_status = -1;
 // current alarm status
 int alarm_status = -1;
 // current sensor temperature
-int current_temp = -1;
+float current_temp = 0.0;
+// temperature threshold
+float threshold = 1.0;
 
 int ep_array[5] = {0};
 
 static void bail(const char *on_what) {
 	perror(on_what);
 	exit(1); 
+}
+
+// function to convert a 3 digit int to single decimal float value
+float itof(int intval){
+	float q = intval / 10;
+	float r = intval % 10;
+	return (q + (r * 0.1));
 }
 
 // function for initialization
@@ -71,7 +79,7 @@ void sendComfirmToWeb(int ep){
 }
 
 // receive web interface's children process endpoints
-int receive_ep_Web(){
+int receiveEpWeb(){
 	int status, r;
 	r = ipc_receive(web_ep, &m, &status);
 	if(m.m_type == WEB_EP_UPDATE){
@@ -95,55 +103,30 @@ int receiveSensorData(){
 
 // control logic (0 within range, 1 too hot, -1 too cold)
 int handleCommand(){
-	int data = 0, delta = 0;
-	int threshold = 1;
+	int data = 0;
+	float delta = 0;
 
 	if(m.m_type == SENSOR_UPDATE)
 		data = m.m_m1.m1i1;
 
-	current_temp = data;
+	current_temp = itof(data);
 
 	memset(&m, 0, sizeof(m));
-
-/***** The RGB LED works in the opposite way the lights glows 
-	when the respective wires are grounded but as we are 
-	connecting to the GPIO pins so when the pins are turned OFF
-	the LED glows and when its ON the LED remains in off state 
-	GPIO1 - Fan
-	GPIO2 - Red Light in the RGB LED
-	GPIO3 - Green Light on the RGB LED
-	GPIO4 - Blue Light on the RGB LED
-*****/
  
-	if(data > setpoint){
+	if(current_temp > setpoint){
 		// too hot
-		delta = (data - setpoint);				
+		delta = (current_temp - setpoint);				
 		if(delta > threshold){
-		/* The following system calls are used to turn on and off the LED and the Fan
-			system("cat /gpio/GPIO1On");
-                	system("cat /gpio/GPIO2Off");
-                	system("cat /gpio/GPIO3On");
-                	system("cat /gpio/GPIO4On");*/
-                	//delta = (data - setpoint);
-			return 1;}
-	}else{
-		// too cold
-		delta = (data - setpoint);
-		//if(delta < threshold)
-		if(data < (setpoint - threshold)){
-		/* The following system calls are used to turn on and off the LED and the Fan			
-			system("cat /gpio/GPIO1Off");
-                	system("cat /gpio/GPIO2On");
-                	system("cat /gpio/GPIO3On");
-                	system("cat /gpio/GPIO4Off");*/
-                	//delta = (data - setpoint);
-			return -1;}
+			return 1;
+		}
 	}
-	/* The following system calls are used to turn on and off the LED and the Fan	
-	system("cat /gpio/GPIO1Off");
-	system("cat /gpio/GPIO2On");
-	system("cat /gpio/GPIO3Off");
-	system("cat /gpio/GPIO4On");*/
+	else{
+		// too cold
+		delta = (setpoint - current_temp);
+		if(delta < threshold){
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -165,10 +148,11 @@ int check_timer(){
 	timer_elipsed = timer_now - timer_count;
 	if(timer_elipsed > time_threshold)
 		return 1;
+	
 	return 0;
 }
 
-// message alarmActuator process, 0 turn alarm on, 1 turn alarm off;
+// message alarmActuator process, 1 turn alarm on, 0 turn alarm off;
 void controlAlarm(int status){
 	memset(&m, 0, sizeof(m));
 	m.m_type = ALARM_COMMAND;
@@ -181,8 +165,8 @@ void controlAlarm(int status){
 		alarm_status = m.m_m1.m1i1;
 }
 
-// message heatActuator process, 0 turn alarm on, 1 turn alarm off;
-void controlHeater(int status){
+// message heatActuator process, 1 turn Fan on, 0 turn Fan off;
+void controlFan(int status){
 	memset(&m, 0, sizeof(m));
 	m.m_type = HEATER_COMMAND;
 	m.m_m1.m1i1 = status;
@@ -259,17 +243,16 @@ int tryReceiveFromWeb(){
 void updateSetpoint(){
 	int r = -1;
 
-	if(temp_point > 10 && temp_point < 35 ){
+	if(temp_point > 20 && temp_point < 40 ){
 		setpoint = temp_point;
-		printf("tempControl: new setpoint is %d\n", setpoint);
+		printf("tempControl: new setpoint is %f\n", setpoint);
 		r = 0;
 	}
 }
 
 //update log file in JSON format
-void logFile(){
+int logging(){
 	char time_string[500];
-
 	time_t timestamp_json = time(NULL);
 	struct tm *time_p = localtime(&timestamp_json);
 
@@ -277,12 +260,11 @@ void logFile(){
 
 	FILE *fp = fopen("load.txt", "w");
 	if(fp == NULL){
-		printf("Error opening file!\n");
-		exit(1);
+		return -1;
 	}
-	fprintf(fp, "{\n\"Current Temperature\" : \"%d\", \"Desired Temperature\" : \"%d\", \"Fan status\" : \"%d\", \"Alarm status\" : \"%d\", \"Time\" : \"%s\"\n}", current_temp, setpoint, heater_status, alarm_status, time_string);
+	fprintf(fp, "{\n\"Current Temperature\" : \"%.1f\", \"Desired Temperature\" : \"%.1f\", \"Fan status\" : \"%d\", \"Alarm status\" : \"%d\", \"Time\" : \"%s\"\n}", current_temp, setpoint, heater_status, alarm_status, time_string);
 	fclose(fp);
-
+	return 0;
 }
 
 /**************************************************************
@@ -295,9 +277,9 @@ void main(int argc, char **argv){
 	initialize();
 	printf("CONTROL: tempSen_ep: %d, heatAct_ep: %d, alarmAct_ep: %d, web_ep: %d\n", tempSen_ep, heatAct_ep, alarmAct_ep, web_ep);
 
-	r = receive_ep_Web();
+	r = receiveEpWeb();
 	if(r != OK){
-		bail("receive_ep_Web()");
+		bail("receiveEpWeb()");
 	}
 
 	while(1){
@@ -308,21 +290,22 @@ void main(int argc, char **argv){
 
 		control_flag = handleCommand();
 
-		if(control_flag  == 0){
+		if(control_flag  == OK){
 			// temperature within desired range
 			stop_timer();
-			if(alarm_status == 1)
-				controlAlarm(0);
+			if(alarm_status == ON)
+				controlAlarm(OFF);
 			continue;
-		}else if(control_flag == -1 || control_flag == 1){
-			// too cold or too hot
+		}
+		else if(control_flag == -1 || control_flag == 1){
+			// too cold (-1) or too hot (1)
 			if(control_flag == -1)
-				controlHeater(1);
+				controlFan(OFF);
 			else
-				controlHeater(0);
+				controlFan(ON);
 
 			if(timer_flag == 1 && check_timer()){
-				controlAlarm(1);
+				controlAlarm(ON);
 			}
 		}
 
@@ -330,8 +313,8 @@ void main(int argc, char **argv){
 			updateSetpoint();
 		}
 
-		logFile();
+		logging();
 	}
-	exit(1);
+	exit(0);
 
 }

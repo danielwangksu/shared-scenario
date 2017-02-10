@@ -15,12 +15,23 @@
 #include "msg.h"
 
 #define OK 0
+#define ON 1
+#define OFF 0
+
 // message data structure (OS define type)  
 message m;
 // tempControl process endpoint (OS defined type) 
 endpoint_t tempCnt_ep;
 // alarm status (-1 uninitiated; 1 heater on; 0 heater off)
 int heater_status = -1;
+
+void setGPIOFanOn(void){
+	system("cat /gpio/GPIO01On");
+}
+
+void setGPIOFanOff(void){
+	system("cat /gpio/GPIO01Off");
+}
 
 // function for initialization
 void initialize(){
@@ -36,15 +47,17 @@ int receiveCommandFromTempControl(){
 	return r;
 }
 
-// turn alarm ON
-int turnHeaterOn(){
+// turn fan ON
+int turnFanOn(){
 	heater_status = 1;
+	setGPIOFanOn();
 	printf("heatActuator: the heater is ON\n");
 }
 
-// turn alarm OFF
-int turnHeaterOff(){
+// turn fan OFF
+int turnFanOff(){
 	heater_status = 0;
+	setGPIOFanOff();
 	printf("heatActuator: the heater is OFF\n");
 }
 
@@ -58,12 +71,12 @@ void handleCommand(){
 	switch(command){
 		case 0:
 			if(heater_status == -1 || heater_status == 1){
-				turnHeaterOn();
+				turnFanOff();
 			}
 			break;
 		case 1:
 			if(heater_status == -1 || heater_status == 0){
-				turnHeaterOff();
+				turnFanOn();
 			}
 			break;
 		default:

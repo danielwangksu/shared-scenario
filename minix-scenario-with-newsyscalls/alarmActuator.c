@@ -21,6 +21,22 @@ endpoint_t tempCnt_ep;
 // alarm status (-1 uninitiated; 1 alarm on; 0 alarm off)
 int alarm_status = -1;
 
+void setGPIO_RED_ON(void){
+	system("cat /gpio/GPIO02On");
+}
+
+void setGPIO_RED_OFF(void){
+	system("cat /gpio/GPIO02Off");
+}
+
+void setGPIO_GREEN_ON(void){
+	system("cat /gpio/GPIO03On");
+}
+
+void setGPIO_GREEN_OFF(void){
+	system("cat /gpio/GPIO03Off");
+}
+
 // function for initialization
 void initialize(){
 	// setup tempControl endpoint
@@ -38,12 +54,14 @@ int receiveCommandFromTempControl(){
 // turn alarm ON
 int turnAlarmOn(){
 	alarm_status = 1;
+	setGPIO_RED_ON();
 	printf("alarmActuator: the alarm is ON\n");
 }
 
 // turn alarm OFF
 int turnAlarmOff(){
 	alarm_status = 0;
+	setGPIO_RED_OFF();
 	printf("alarmActuator: the alarm is OFF\n");
 }
 
@@ -57,12 +75,12 @@ void handleCommand(){
 	switch(command){
 		case 0:
 			if(alarm_status == -1 || alarm_status == 1){
-				turnAlarmOn();
+				turnAlarmOff();
 			}
 			break;
 		case 1:
 			if(alarm_status == -1 || alarm_status == 0){
-				turnAlarmOff();
+				turnAlarmOn();
 			}
 			break;
 		default:
