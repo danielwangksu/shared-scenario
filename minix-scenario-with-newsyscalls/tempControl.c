@@ -22,6 +22,7 @@
 #include <time.h>
 #include "msg.h"
 
+int keepRunning = 1;
 // message data structure (OS define type)  
 message m;
 // endpoints for each process
@@ -111,6 +112,8 @@ int handleCommand(){
 
 	current_temp = itof(data);
 
+	printf("TEMPCONTROL: current temp %f\n", current_temp);
+
 	memset(&m, 0, sizeof(m));
  
 	if(current_temp > setpoint){
@@ -123,7 +126,8 @@ int handleCommand(){
 	else{
 		// too cold
 		delta = (setpoint - current_temp);
-		if(delta < threshold){
+		printf("TEMPCONTOL: delta = %f\n", delta);
+		if(delta > threshold){
 			return -1;
 		}
 	}
@@ -137,7 +141,7 @@ void start_timer(){
 
 void stop_timer(){
 	timer_count = 0;
-	timer_flag = 1;
+	timer_flag = 0;
 }
 
 int check_timer(){
@@ -267,6 +271,16 @@ int logging(){
 	return 0;
 }
 
+// interrupt handler
+void intHandler(int dummy){
+	system("cat /gpio/GPIO2Off");
+	system("cat /gpio/GPIO3Off");
+	system("cat /gpio/GPIO1Off");
+	keepRunning = 0;
+}
+
+
+
 /**************************************************************
 *	main function							 				  *
 ***************************************************************/
@@ -282,7 +296,9 @@ void main(int argc, char **argv){
 		bail("receiveEpWeb()");
 	}
 
-	while(1){
+	signal(SIGINT, intHandler);
+
+	while(keepRunning){
 		r = receiveSensorData();
 		if(r != OK){
 			continue;
@@ -290,21 +306,25 @@ void main(int argc, char **argv){
 
 		control_flag = handleCommand();
 
+		printf("TEMPCONTROL: control_flag %d\n", control_flag);
+
 		if(control_flag  == OK){
 			// temperature within desired range
 			stop_timer();
 			if(alarm_status == ON)
 				controlAlarm(OFF);
-			continue;
 		}
 		else if(control_flag == -1 || control_flag == 1){
 			// too cold (-1) or too hot (1)
 			if(control_flag == -1)
 				controlFan(OFF);
-			else
+			if(control_flag == 1)
 				controlFan(ON);
 
-			if(timer_flag == 1 && check_timer()){
+			if(timer_flag != 1){
+				start_timer();
+			}
+			else if(timer_flag == 1 && check_timer()){
 				controlAlarm(ON);
 			}
 		}

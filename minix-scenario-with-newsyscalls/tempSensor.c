@@ -105,7 +105,7 @@ int openFile(){
 		printf("\nError : couldn't open the file %s\n", filename);
 		return -1;
 	}
-	printf("File opened successfully\n");
+	// printf("File opened successfully\n");
 	return 0;
 }
 
@@ -147,13 +147,15 @@ int readBMPData(){
 	float temp_data;
 
 	// fscanf(fp, "%s", readbuf);
-	if((fgets(readbuf, MAX_BUF, (FILE*)fp)) == NULL){
-		printf("cannot read device file\n");
-	}
+	// if((fgets(readbuf, MAX_BUF, (FILE*)fp)) == NULL){
+	// 	printf("cannot read device file\n");
+	// }
+	fscanf(fp, "%s %f", readbuf, &temp_data);
 	fclose(fp);
-	temp_data = atof(readbuf);
+	// printf("!!!%s!!!\n", readbuf);
+	// temp_data = atof(readbuf);
 
-	printf("\n*******************\nTemperature Value : %d\n", temp_data);
+	printf("\n*******************\nTemperature Value : %f\n", temp_data);
 
 	// fscanf(fp, "%s", readbuf);
 	// fgets(readbuf, 255, (FILE*)fp);

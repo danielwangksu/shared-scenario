@@ -22,19 +22,19 @@ endpoint_t tempCnt_ep;
 int alarm_status = -1;
 
 void setGPIO_RED_ON(void){
-	system("cat /gpio/GPIO02On");
+	system("cat /gpio/GPIO2On");
 }
 
 void setGPIO_RED_OFF(void){
-	system("cat /gpio/GPIO02Off");
+	system("cat /gpio/GPIO2Off");
 }
 
 void setGPIO_GREEN_ON(void){
-	system("cat /gpio/GPIO03On");
+	system("cat /gpio/GPIO3On");
 }
 
 void setGPIO_GREEN_OFF(void){
-	system("cat /gpio/GPIO03Off");
+	system("cat /gpio/GPIO3Off");
 }
 
 // function for initialization

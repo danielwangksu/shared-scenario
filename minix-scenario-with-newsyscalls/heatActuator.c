@@ -26,17 +26,18 @@ endpoint_t tempCnt_ep;
 int heater_status = -1;
 
 void setGPIOFanOn(void){
-	system("cat /gpio/GPIO01On");
+	system("cat /gpio/GPIO1On");
 }
 
 void setGPIOFanOff(void){
-	system("cat /gpio/GPIO01Off");
+	system("cat /gpio/GPIO1Off");
 }
 
 // function for initialization
 void initialize(){
 	// setup tempControl endpoint
 	tempCnt_ep = getendpoint_name("tempControl");
+	system("mount -t gpio none /gpio");
 }
 
 // receive command from tempControl endpoint
