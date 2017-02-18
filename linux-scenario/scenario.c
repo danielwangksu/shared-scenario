@@ -138,6 +138,13 @@ void main(void){
 
 		mq_close(mqd_sw);
 
+		mq_close(mqd_sc);
+		mq_close(mqd_ch);
+		mq_close(mqd_hc);
+		mq_close(mqd_ca);
+		mq_close(mqd_ac);
+		mq_close(mqd_cw);
+
 		while(1){
 			t_pid = wait(&waitstatus);
 			printf("parent: child process(%d) terminated with exit status %d\n", t_pid, waitstatus);

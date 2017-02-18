@@ -16,6 +16,8 @@
 #include "msg.h"
 #define MAX_BUF 64
 
+static volatile int keepRunning = 1;
+
 int readDevicefile();
 int initSensor();
 int openDevicefile();
@@ -27,6 +29,7 @@ char path[MAX_BUF];
 char buf[MAX_BUF];
 // variables for the BMP180 sensor read process - END*/
 
+mqd_t mqd_sc;
 
 // fault handler
 static void bail(const char *on_what) {
@@ -34,12 +37,21 @@ static void bail(const char *on_what) {
 	exit(1);
 }
 
+void intHandler(int dummy){
+	int status;
+
+	printf("TS: get interrupt\n");
+	status = mq_close(mqd_sc);
+	keepRunning = 0;
+}
+
 void main(int argc, char **argv){
-	mqd_t mqd_sc;
 	int piro = 0;
 	int status;
 	int data = 0;
 	int flag = O_WRONLY;
+
+	signal(SIGINT, intHandler);
 
 	//Sid : call the initSensor function	
 	if(initSensor() != 0)
@@ -51,7 +63,7 @@ void main(int argc, char **argv){
 
 	printf("tempSensor is loaded\n");
 
-	while(1){
+	while(keepRunning){
 		// //Sid : rewind the device file to read the updated data		
 		// rewind(fp);		
 

@@ -249,11 +249,19 @@ void update_setpoint(){
 }
 
 void intHandler(int dummy){
-	int ret;
+	int ret, status;
 
+	printf("TC: get interrupt\n");
 	ret = gpioChange(LED_BLUE,OFF);
 	ret = gpioChange(LED_GREEN,OFF);
 	ret = gpioChange(LED_RED,OFF);
+	ret = gpioChange(FAN,OFF);
+	status = mq_close(mqd_sc);
+	status = mq_close(mqd_ch);
+	status = mq_close(mqd_hc);
+	status = mq_close(mqd_ca);
+	status = mq_close(mqd_ac);
+	status = mq_close(mqd_cw);
 	keepRunning = 0;
 }
 
@@ -303,9 +311,17 @@ void main(int argc, char **argv){
 	if(status != OK){
 		bail("mq_unlink(/cnt-heat)");
 	}
+	status = mq_unlink("/heat-cnt");
+	if(status != OK){
+		bail("mq_unlink(/heat-cnt)");
+	}
 	status = mq_unlink("/cnt-alarm");
 	if(status != OK){
 		bail("mq_unlink(/cnt-alarm)");
+	}
+	status = mq_unlink("/alarm-cnt");
+	if(status != OK){
+		bail("mq_unlink(/alarm-cnt)");
 	}
 	status = mq_unlink("/cnt-web");
 	if(status != OK){

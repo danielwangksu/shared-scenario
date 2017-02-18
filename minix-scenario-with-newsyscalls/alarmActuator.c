@@ -34,7 +34,7 @@ void setGPIO_GREEN_ON(void){
 }
 
 void setGPIO_GREEN_OFF(void){
-	system("cat /gpio/GPIO3Off");
+	system("cat /gpio/GPIO03Off");
 }
 
 // function for initialization

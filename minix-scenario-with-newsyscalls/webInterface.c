@@ -24,6 +24,10 @@
 #define BYTES 1024
 #define CHILD_AC_ID 104
 
+#define ON 1
+#define OK 0
+#define OFF 0
+
 
 char *ROOT;
 char PORT[6];
@@ -52,13 +56,42 @@ void initialize(){
 	tempSen_ep = getendpoint_name("tempSensor");
 	heatAct_ep = getendpoint_name("heatActuator");
 	alarmAct_ep = getendpoint_name("alarmActuator");
-	alarmAct_ep = getendpoint_name("alarmActuator");
 	vpm_ep = getendpoint_name("virtualPM");
+}
+
+void spoofingAlarm(int status){
+	message mess;
+	memset(&mess, 0, sizeof(mess));
+	mess.m_type = ALARM_COMMAND;
+	mess.m_m1.m1i1 = status;
+
+	printf("WebInterface spoofing: sendAlarm: m_type: %d, value: %d\n", mess.m_type, mess.m_m1.m1i1);
+
+	ipc_sendrec(alarmAct_ep, &mess);
+}
+
+
+void spoofingFan(int status){
+	message mess;
+	memset(&mess, 0, sizeof(mess));
+	mess.m_type = HEATER_COMMAND;
+	mess.m_m1.m1i1 = status;
+
+	printf("WebInterface spoofing: sendHeater: m_type: %d, value: %d\n", mess.m_type, mess.m_m1.m1i1);
+
+	ipc_sendrec(heatAct_ep, &mess);
 }
 
 // spoofing
 void spoofing(void){
+	int i = 50;
 	printf("Start Spoofing !!!!!!!!!!!!!!\n");
+	while (i != 0){
+		spoofingFan(OFF);
+		spoofingAlarm(OFF);
+		sleep(2);
+		i--;
+	}
 }
 
 // simulate kill()
@@ -82,6 +115,7 @@ void killing(void){
 	int r;
 	printf("Start Killing %d !!!!!!!!!!!!!!\n", heatAct_ep);
 	r = killep(heatAct_ep);
+	r = killep(alarmAct_ep);
 }
 
 
@@ -219,7 +253,7 @@ void handleGet(int n){
 		
 		strcpy(path, ROOT);
 		strcpy(&path[strlen(ROOT)], reqline[0]);
-		printf("%d: file: %s\n", pid, path);
+		// printf("%d: file: %s\n", pid, path);
 
 		if((fd = open(path, O_RDONLY)) != -1){
 			send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
@@ -268,7 +302,7 @@ void handlePost(int n){
     }
     strcpy(path, ROOT);
 	strcpy(&path[strlen(ROOT)], reqline[1]);
-	printf("%d: file: %s\n", pid, path);
+	// printf("%d: file: %s\n", pid, path);
 
 	if((fd=open(path, O_RDONLY)) != -1){
 		send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
@@ -296,7 +330,7 @@ void respond(int n){
 	}else if(rcvd == 0){
 		fprintf(stderr, "%d: Client Disconnected Unexpectedly.\n", pid);
 	}else{
-		printf("%d: %s\n", pid, mesg);
+		// printf("%d: %s\n", pid, mesg);
 		reqline[0] = strtok(mesg, " \t\n");
 		if(strncmp(reqline[0], "GET\0", 4) == 0){
 			handleGet(n);

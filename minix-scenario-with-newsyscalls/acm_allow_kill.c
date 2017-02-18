@@ -50,7 +50,7 @@ ac_receiver_entry tempControl_entry[3] =  {
 ac_receiver_entry heatActuator_entry[1] = {{TEMPCOT_ACID, 4, &v1}};
 ac_receiver_entry alarmActuator_entry[1] = {{TEMPCOT_ACID, 4, &v1}};
 ac_receiver_entry webInterface_entry[2] = {{TEMPCOT_ACID, 4, &v12}, {VPM_ACID, 2, &v2}};
-ac_receiver_entry vpm_entry[1] = {{TEMPCOT_ACID, 1, &v1}};
+ac_receiver_entry vpm_entry[1] = {{WEBINTF_ACID, 1, &v1}};
 
 ac_sender_entry access_control_matrix[NR_AC_PROCESSES] = {
   {1, tempSensor_entry},

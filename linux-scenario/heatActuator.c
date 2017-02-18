@@ -22,6 +22,10 @@
 #define FAN 115
 #define MAX_BUF 64
 
+static volatile int keepRunning = 1;
+
+mqd_t mqd_ch, mqd_hc;
+
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
@@ -46,8 +50,16 @@ int gpioChange(int gpio,int value){
 	return 0;
 }
 
+void intHandler(int dummy){
+	int status;
+
+	printf("HA: get interrupt\n");
+	status = mq_close(mqd_ch);
+	status = mq_close(mqd_hc);
+	keepRunning = 0;
+}
+
 void main(int argc, char **argv){
-	mqd_t mqd_ch, mqd_hc;
 	int prio = 0;
 	int status, retval;
 	int flag = O_RDONLY;
@@ -57,6 +69,8 @@ void main(int argc, char **argv){
 	struct mq_attr attr_ch;
 	int past_heater_status = -1;
 	int heater_status = -1;
+
+	signal(SIGINT, intHandler);
 
 	mqd_ch = mq_open("/cnt-heat", flag);
 	if(mqd_ch == (mqd_t) -1 ){
@@ -72,7 +86,7 @@ void main(int argc, char **argv){
 
 	printf("heatActuator is loaded\n");
 
-	while(1){
+	while(keepRunning){
 		len = mq_receive(mqd_ch, (char *) &message, attr_ch.mq_msgsize, &prio);
 		if(len == -1)
 			bail("hc: mq_receive(mqd_ch)");

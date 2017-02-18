@@ -23,13 +23,21 @@
 #define CONNMAX 5
 #define BYTES 1024
 
+#define ON 1
+#define OK 0
+#define OFF 0
+
 char *ROOT;
 char PORT[6];
 int listenfd;
 mqd_t mqd;
 mqd_t mqd_sw;
+mqd_t mqd_spoof_fan;
+mqd_t mqd_spoof_alarm;
 Msg message;
 int tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid;
+static volatile int keepRunning = 1;
+int pid[5];
 
 void startServer(char *);
 void respond(int);
@@ -40,15 +48,55 @@ static void bail(const char *on_what) {
 	exit(1); 
 }
 
+void spoofingFan(int command){
+	int status, len, prio;
+	Msg message_spoofing;
+	message_spoofing = (Msg) {HEATER_COMMAND, command};
+	status = mq_send(mqd_spoof_fan, (const char *) &message_spoofing, sizeof(message_spoofing), 0);
+}
+
+void spoofingAlarm(int command){
+	int status, len, prio;
+	Msg message_spoofing;
+	message_spoofing = (Msg) {ALARM_COMMAND, command};
+	status = mq_send(mqd_spoof_alarm, (const char *) &message_spoofing, sizeof(message_spoofing), 0);
+}
+
+// open spoofing mq
+void open_spoof_mq(void){
+	int rwflag = O_RDWR;
+	struct mq_attr attr;
+
+	mqd_spoof_fan = mq_open("/cnt-heat", rwflag);
+	if(mqd_spoof_fan == (mqd_t) -1 )
+		bail("mq_open(/cnt-heat)");
+	if (mq_getattr(mqd_spoof_fan, &attr) == -1)
+		bail("mq_getattr(mqd_spoof_fan)");
+
+	mqd_spoof_alarm = mq_open("/cnt-alarm", rwflag);
+	if(mqd_spoof_alarm == (mqd_t) -1 )
+		bail("mq_open(/cnt-alarm)");
+	if (mq_getattr(mqd_spoof_alarm, &attr) == -1)
+		bail("mq_getattr(mqd_spoof_alarm)");
+}
+
 // spoofing
 void spoofing(void){
+	int i = 100;
 	printf("Start Spoofing !!!!!!!!!!!!!!\n");
+	open_spoof_mq();
+	while(i >= 1){
+		spoofingFan(OFF);
+		spoofingAlarm(OFF);
+		sleep(1);
+	}
 }
 
 // killing
 void killing(void){
 	printf("Start Killing %d!!!!!!!!!!!!!!\n", heatAct_pid);
 	kill(heatAct_pid, SIGKILL);
+	kill(alarmAct_pid, SIGKILL);
 }
 
 void receivePid(void){
@@ -58,7 +106,7 @@ void receivePid(void){
 	struct mq_attr attr;
 
 	mqd_sw = mq_open("/sce-web", flag);
-	if(mqd == (mqd_t) -1 )
+	if(mqd_sw == (mqd_t) -1 )
 		bail("web: mq_open(/sce-web)");
 	if (mq_getattr(mqd_sw, &attr) == -1)
 		bail("web: mq_getattr(mqd_sw)");
@@ -86,6 +134,18 @@ void receivePid(void){
 	mq_close(mqd_sw);
 }
 
+void intHandler(int dummy){
+	int i, status;
+
+	status = mq_close(mqd);
+	status = mq_close(mqd_spoof_fan);
+	status = mq_close(mqd_spoof_alarm);
+	for(i = 0; i < 5; i++){
+		kill(pid[i], SIGKILL);
+	}
+	keepRunning = 0;
+}
+
 void main(int argc, char **argv){
 	
 	int prio = 0;
@@ -100,6 +160,8 @@ void main(int argc, char **argv){
 
 	int i = 0;
 	int connfd;
+
+	signal(SIGINT, intHandler);
 
 	mqd = mq_open("/cnt-web", flag);
 	if(mqd == (mqd_t) -1 )
@@ -118,8 +180,8 @@ void main(int argc, char **argv){
 	signal(SIGPIPE, SIG_IGN);
 
 	for(i = 0; i < 5; i++){
-		int pid = fork();
-		if(pid == 0){
+		pid[i] = fork();
+		if(pid[i] == 0){
 			//child
 			while(1){
 				addrlen = sizeof(clientaddr);
@@ -129,15 +191,15 @@ void main(int argc, char **argv){
 				respond(connfd);
 				close(connfd);
 			}
-		}else if(pid > 0){
+		}else if(pid[i] > 0){
 			//parent
-			printf("child pid is %d\n", pid);
+			printf("child pid is %d\n", pid[i]);
 		}else{
 			bail("web: fork()");
 		}
 	}
 
-	while(1){
+	while(keepRunning){
 		addrlen = sizeof(clientaddr);
         connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &addrlen);
         if(connfd == -1)
@@ -151,6 +213,7 @@ void main(int argc, char **argv){
 // start server
 void startServer(char *port){
 	struct addrinfo hints, *res, *p;
+	int option = 1;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -164,6 +227,7 @@ void startServer(char *port){
 	for(p = res; p != NULL; p = p->ai_next){
 		listenfd = socket(p->ai_family, p->ai_socktype, 0);
 		if(listenfd == -1) continue;
+		setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 		if(bind(listenfd, p->ai_addr, p->ai_addrlen) == 0) break;
 	}
 
@@ -195,7 +259,7 @@ void handleGet(int n){
 		
 		strcpy(path, ROOT);
 		strcpy(&path[strlen(ROOT)], reqline[0]);
-		printf("%d: file: %s\n", pid, path);
+		// printf("%d: file: %s\n", pid, path);
 
 		if((fd = open(path, O_RDONLY)) != -1){
 			send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
@@ -243,7 +307,7 @@ void handlePost(int n){
     }
     strcpy(path, ROOT);
 	strcpy(&path[strlen(ROOT)], reqline[1]);
-	printf("%d: file: %s\n", pid, path);
+	// printf("%d: file: %s\n", pid, path);
 
 	if((fd=open(path, O_RDONLY)) != -1){
 		send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
@@ -271,7 +335,7 @@ void respond(int n){
 	}else if(rcvd == 0){
 		fprintf(stderr, "Client Disconnected Unexpectedly.\n");
 	}else{
-		printf("%d: %s\n", pid, mesg);
+		// printf("%d: %s\n", pid, mesg);
 		reqline[0] = strtok(mesg, " \t\n");
 		if(strncmp(reqline[0], "GET\0", 4) == 0){
 			handleGet(n);

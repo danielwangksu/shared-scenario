@@ -23,6 +23,9 @@
 #define LED_BLUE 14
 #define MAX_BUF 64
 
+mqd_t mqd_ca, mqd_ac;
+static volatile int keepRunning = 1;
+
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
@@ -62,8 +65,16 @@ void setLED(int alarm_status){
 	}
 }
 
+void intHandler(int dummy){
+	int status;
+
+	printf("AA: get interrupt\n");
+	status = mq_close(mqd_ca);
+	status = mq_close(mqd_ac);
+	keepRunning = 0;
+}
+
 void main(int argc, char **argv){
-	mqd_t mqd_ca, mqd_ac;
 	int prio = 0;
 	int status, retval;
 	int flag = O_RDONLY;
@@ -73,6 +84,8 @@ void main(int argc, char **argv){
 	struct mq_attr attr_ca;
 	int past_alarm_status = -1;
 	int alarm_status = -1;
+
+	signal(SIGINT, intHandler);
 
 	mqd_ca = mq_open("/cnt-alarm", flag);
 	if(mqd_ca == (mqd_t) -1 ){
@@ -88,7 +101,7 @@ void main(int argc, char **argv){
 
 	printf("alarmActuator is loaded\n");
 
-	while(1){
+	while(keepRunning){
 		len = mq_receive(mqd_ca, (char *) &message, attr_ca.mq_msgsize, &prio);
 		if(len == -1)
 			bail("al: mq_receive(mqd_ca)");
