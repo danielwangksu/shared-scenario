@@ -29,7 +29,6 @@ mqd_t mqd_ch, mqd_hc;
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
-	exit(1); 
 }
 
 // function for change GPIO device
@@ -67,8 +66,8 @@ void main(int argc, char **argv){
 	ssize_t len;
 	Msg message;
 	struct mq_attr attr_ch;
-	int past_heater_status = -1;
-	int heater_status = -1;
+	int past_heater_status = 0;
+	int heater_status = 0;
 
 	signal(SIGINT, intHandler);
 

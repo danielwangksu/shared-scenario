@@ -137,13 +137,24 @@ void receivePid(void){
 void intHandler(int dummy){
 	int i, status;
 
+	printf("WEB: got the interrupt\n");
 	status = mq_close(mqd);
 	status = mq_close(mqd_spoof_fan);
 	status = mq_close(mqd_spoof_alarm);
 	for(i = 0; i < 5; i++){
 		kill(pid[i], SIGKILL);
 	}
-	keepRunning = 0;
+	exit(0);
+}
+
+void childIntHandler(int dummy){
+	int i, status;
+
+	printf("WEB: got the interrupt\n");
+	status = mq_close(mqd);
+	status = mq_close(mqd_spoof_fan);
+	status = mq_close(mqd_spoof_alarm);
+	exit(0);
 }
 
 void main(int argc, char **argv){
@@ -161,8 +172,6 @@ void main(int argc, char **argv){
 	int i = 0;
 	int connfd;
 
-	signal(SIGINT, intHandler);
-
 	mqd = mq_open("/cnt-web", flag);
 	if(mqd == (mqd_t) -1 )
 		bail("web: mq_open(/cnt-web)");
@@ -170,6 +179,7 @@ void main(int argc, char **argv){
 		bail("web: mq_getattr(mqd)");
 
 	receivePid();
+	signal(SIGINT, intHandler);
 
 	ROOT = getenv("PWD");
 	strcpy(PORT, "10000");
@@ -183,6 +193,7 @@ void main(int argc, char **argv){
 		pid[i] = fork();
 		if(pid[i] == 0){
 			//child
+			signal(SIGINT, childIntHandler);
 			while(1){
 				addrlen = sizeof(clientaddr);
 				connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &addrlen);
@@ -191,6 +202,7 @@ void main(int argc, char **argv){
 				respond(connfd);
 				close(connfd);
 			}
+			exit(0);
 		}else if(pid[i] > 0){
 			//parent
 			printf("child pid is %d\n", pid[i]);
@@ -199,15 +211,14 @@ void main(int argc, char **argv){
 		}
 	}
 
-	while(keepRunning){
-		addrlen = sizeof(clientaddr);
-        connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &addrlen);
-        if(connfd == -1)
-        	continue;
-        respond(connfd);
-        close(connfd);
-    }
-    exit(0);
+	int t_pid, waitstatus;
+	t_pid = wait(&waitstatus);
+	if(t_pid > 0){
+		for(i = 0; i < 5; i++){
+			kill(pid[i], SIGKILL);
+		}
+		exit(0);
+	}
 }
 
 // start server

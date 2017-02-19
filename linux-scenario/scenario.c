@@ -15,14 +15,28 @@
 #include <mqueue.h>
 #include "msg.h"
 
+int tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid, web_pid;
+
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
 	exit(1); 
 }
 
+void intHandler(int dummy){
+	int ret, status;
+
+	printf("SCENARIO: get interrupt\n");
+
+	status = kill(tempSen_pid, SIGINT);
+	status = kill(tempCnt_pid, SIGINT);
+	status = kill(heatAct_pid, SIGINT);
+	status = kill(alarmAct_pid, SIGINT);
+	status = kill(web_pid, SIGINT);
+	exit(0);
+}
+
 void main(void){
-	int tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid, web_pid;
 	int t_pid;
 	int waitstatus;
 	int status;
@@ -40,6 +54,8 @@ void main(void){
 
 	char *argv[2];
 	argv[1] = NULL;
+
+	signal(SIGINT, intHandler);
 
 	// queue for tempSensor tempControl
 	mqd_sc = mq_open("/sen-cnt", flag, perms, &attr);
@@ -122,7 +138,6 @@ void main(void){
 		}
 		exit(0);
 	}else{
-
 		printf("tempSen_pid %d, tempCnt_pid %d, heatAct_pid %d, alarmAct_pid %d\n", tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid);
 		Msg message = {PID_UPDATE, tempSen_pid};
 		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
@@ -145,42 +160,14 @@ void main(void){
 		mq_close(mqd_ac);
 		mq_close(mqd_cw);
 
-		while(1){
-			t_pid = wait(&waitstatus);
-			printf("parent: child process(%d) terminated with exit status %d\n", t_pid, waitstatus);
-			if(t_pid != tempSen_pid){
-				continue;
-			}else{
-				kill(tempCnt_pid, 9);
-				kill(heatAct_pid, 9);
-				kill(alarmAct_pid, 9);
-				kill(web_pid, 9);
-				status = mq_unlink("/sen-cnt");
-				if(status != 0){
-					bail("mq_unlink(/sen-cnt)");
-				}
-				status = mq_unlink("/cnt-heat");
-				if(status != 0){
-					bail("mq_unlink(/cnt-heat)");
-				}
-				status = mq_unlink("/heat-cnt");
-				if(status != 0){
-					bail("mq_unlink(/heat-cnt)");
-				}
-				status = mq_unlink("/cnt-alarm");
-				if(status != 0){
-					bail("mq_unlink(/cnt-alarm)");
-				}
-				status = mq_unlink("/alarm-cnt");
-				if(status != 0){
-					bail("mq_unlink(/alarm-cnt)");
-				}
-				status = mq_unlink("/cnt-web");
-				if(status != 0){
-					bail("mq_unlink(/cnt-web)");
-				}
-				exit(1);
-			}
+		t_pid = wait(&waitstatus);
+		if(t_pid > 0){
+			status = kill(tempSen_pid, SIGINT);
+			status = kill(tempCnt_pid, SIGINT);
+			status = kill(heatAct_pid, SIGINT);
+			status = kill(alarmAct_pid, SIGINT);
+			status = kill(web_pid, SIGINT);
+			exit(0);
 		}
 	}
 }

@@ -33,7 +33,7 @@ int gpioChange(int gpio, int value);
 
 static volatile int keepRunning = 1;
 float const threshold = 1.0;
-time_t const time_threshold = 60; // 1 min
+time_t const time_threshold = 30; // 30 sec
 float delta = 0.0;
 float setpoint = 27.0;
 
@@ -47,14 +47,13 @@ struct mq_attr attr_sc, attr_ch, attr_hc, attr_ca, attr_ac, attr_cw;
 Msg message_sc, message_ch, message_hc, message_ca, message_ac, message_cw;
 
 int sensor_data = -1;
-int heater_data = -1;
-int alarm_data = -1;
+int heater_data = 0;
+int alarm_data = 0;
 int web_setpoint = -1;
 
 // fault handler
 static void bail(const char *on_what) {
 		perror(on_what);
-		exit(1);
 }
 
 void open_mq(void){
@@ -194,18 +193,18 @@ void control_start(void){
 			status = mq_send_heater(OFF);
 			if(status != OK)
 				bail("mq_send_heater(OFF)");
-			check_timer();
+			// check_timer();
 		}
-		else{
-			if(alarm_data){
-				set_alarm = 0;
-				timestamp_s = 0;
-				printf("tempControl: we need turn the alarm OFF\n");
-				status = mq_send_alarm(OFF);
-				if(status != OK)
-					bail("mq_send_heater(OFF)");
-			}
-		}
+		// else{
+		// 	if(alarm_data){
+		// 		set_alarm = 0;
+		// 		timestamp_s = 0;
+		// 		printf("tempControl: we need turn the alarm OFF\n");
+		// 		status = mq_send_alarm(OFF);
+		// 		if(status != OK)
+		// 			bail("mq_send_heater(OFF)");
+		// 	}
+		// }
 	}
 }
 
@@ -221,7 +220,7 @@ int logging(void){
 	if(fp == NULL){
 		return -1;
 	}
-	fprintf(fp, "{\n\"Current Temperature\" : \"%.1f\", \"Desired Temperature\" : \"%.1f\", \"Fan status\" : \"%d\", \"Alarm status\" : \"%d\", \"Time\" : \"%s\"\n}", itof(sensor_data), setpoint, heater_data, alarm_data, time_string);
+	fprintf(fp, "{\n\"Current Temperature\" : \"%.1f\", \"Desired Temperature\" : \"%.1f\", \"Fan status\" : \"%s\", \"Alarm status\" : \"%s\", \"Time\" : \"%s\"\n}", itof(sensor_data), setpoint, (heater_data) ? "ON" : "OFF", (alarm_data) ? "ON" : "OFF", time_string);
 	fclose(fp);
 	return 0;
 }
@@ -250,8 +249,12 @@ void update_setpoint(){
 
 void intHandler(int dummy){
 	int ret, status;
+	char filename[] = "load.txt";
 
 	printf("TC: get interrupt\n");
+	ret = remove(filename);
+	printf("ret = %d\n", ret);
+	fflush(stdout);
 	ret = gpioChange(LED_BLUE,OFF);
 	ret = gpioChange(LED_GREEN,OFF);
 	ret = gpioChange(LED_RED,OFF);

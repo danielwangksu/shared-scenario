@@ -29,7 +29,6 @@ static volatile int keepRunning = 1;
 // fault handler
 static void bail(const char *on_what) {
 	perror(on_what);
-	exit(1); 
 }
 
 // function for change GPIO device
@@ -82,8 +81,8 @@ void main(int argc, char **argv){
 	ssize_t len;
 	Msg message;
 	struct mq_attr attr_ca;
-	int past_alarm_status = -1;
-	int alarm_status = -1;
+	int past_alarm_status = 0;
+	int alarm_status = 0;
 
 	signal(SIGINT, intHandler);
 
