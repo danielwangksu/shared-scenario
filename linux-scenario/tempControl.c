@@ -33,9 +33,9 @@ int gpioChange(int gpio, int value);
 
 static volatile int keepRunning = 1;
 float const threshold = 1.0;
-time_t const time_threshold = 30; // 30 sec
+time_t const time_threshold = 20; // 20 sec
 float delta = 0.0;
-float setpoint = 27.0;
+float setpoint = 26.0;
 
 time_t timestamp_s = 0;
 time_t timestamp_e = 0;

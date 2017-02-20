@@ -98,7 +98,8 @@ void main(int argc, char **argv){
 		bail("al: mq_open(/alarm-cnt)");
 	}
 
-	printf("alarmActuator is loaded\n");
+	int pid = getpid();
+	printf("alarmActuator is loaded %d\n", pid);
 
 	while(keepRunning){
 		len = mq_receive(mqd_ca, (char *) &message, attr_ca.mq_msgsize, &prio);

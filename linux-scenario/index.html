@@ -20,28 +20,45 @@
   <body>
   <div class="container">
 
-    <h1 class="text-center">Linux Temperature Control Panel</h1>
+    <h1 class="text-center"><strong>Linux</strong> Temperature Control Panel</h1>
 
+    <div class="row">
     <div ng-app='real-time' ng-controller='update_control'>
       <ul class="unstyled">
         <li ng-repeat="(key, value) in update_data">
-          <h2><span><strong>{{key}}</strong> : <strong>{{value}}</strong></span></h2>
+          <h2><span><strong>{{key}}</strong> : <strong><font color="red">{{value}}</font></strong></span></h2>
         </li>
       </ul>    
     </div>
+    </div>
 
-    <div class="col-lg-6"> 
+    <div class="row">
+    <div class="col-lg-12"> 
       <form action="index.html" method="POST">
-        <h2><label for="inputdefault">Update Desired Temperature:</label></h2>
+        <h3><label for="inputdefault">Update Desired Temperature:</label></h3>
         <div class="input-group">
           <input type="text" class="form-control" name="new_setpoint" placeholder="Please input the desired temperature">
           <span class="input-group-btn">
             <button class="btn btn-default" type="submit">
-            <span class="glyphicon glyphicon-upload">Submit</span>
+            <span class="glyphicon glyphicon-upload"> Submit</span>
             </button>
           </span>
  	      </div>
       </form>
+    </div>
+    </div>
+
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <div class="row">
+    <div class="col-lg-6 text-right">
+    <button class="btn btn-danger" type="button" onclick="location.href='attack.html'">
+    <span class="glyphicon glyphicon-alert"> Compromise</span>
+    </button>
+    </div>
     </div>
 
   </div>

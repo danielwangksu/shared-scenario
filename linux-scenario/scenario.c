@@ -139,17 +139,17 @@ void main(void){
 		exit(0);
 	}else{
 		printf("tempSen_pid %d, tempCnt_pid %d, heatAct_pid %d, alarmAct_pid %d\n", tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid);
-		Msg message = {PID_UPDATE, tempSen_pid};
-		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+		Msg message1 = {PID_UPDATE, tempSen_pid};
+		status = mq_send(mqd_sw, (const char *) &message1, sizeof(message1), 0);
 
-		message.data = tempCnt_pid;
-		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+		Msg message2 = {PID_UPDATE, tempCnt_pid};
+		status = mq_send(mqd_sw, (const char *) &message2, sizeof(message2), 0);
 
-		message.data = heatAct_pid;
-		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+		Msg message3 = {PID_UPDATE, heatAct_pid};
+		status = mq_send(mqd_sw, (const char *) &message3, sizeof(message3), 0);
 
-		message.data = alarmAct_pid;
-		status = mq_send(mqd_sw, (const char *) &message, sizeof(message), 0);
+		Msg message4 = {PID_UPDATE, alarmAct_pid};
+		status = mq_send(mqd_sw, (const char *) &message4, sizeof(message4), 0);
 
 		mq_close(mqd_sw);
 
@@ -160,8 +160,11 @@ void main(void){
 		mq_close(mqd_ac);
 		mq_close(mqd_cw);
 
-		t_pid = wait(&waitstatus);
-		if(t_pid > 0){
+		while(1){
+			t_pid = wait(&waitstatus);
+			if(t_pid == alarmAct_pid || t_pid == heatAct_pid)
+				continue;
+
 			status = kill(tempSen_pid, SIGINT);
 			status = kill(tempCnt_pid, SIGINT);
 			status = kill(heatAct_pid, SIGINT);

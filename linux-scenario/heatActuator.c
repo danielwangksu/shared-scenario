@@ -83,7 +83,8 @@ void main(int argc, char **argv){
 		bail("hc: mq_open(/heat-cnt)");
 	}
 
-	printf("heatActuator is loaded\n");
+	int pid = getpid();
+	printf("heatActuator is loaded %d\n", pid);
 
 	while(keepRunning){
 		len = mq_receive(mqd_ch, (char *) &message, attr_ch.mq_msgsize, &prio);

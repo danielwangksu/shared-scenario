@@ -8,7 +8,7 @@
     <meta name="description" content="Control Panel">
     <meta name="author" content="Daniel Wang">
 
-    <title>Temperature Control Panel</title>
+    <title>MINIX Temperature Control Panel</title>
 
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
@@ -20,11 +20,58 @@
   <body>
   <div class="container">
 
-    <h1 class="text-center">Cyber Attack</h1>
+    <h1 class="text-center">Compromised <strong>MINIX</strong> Temperature Control Panel</h1>
 
+    <div class="row">
+    <div ng-app='real-time' ng-controller='update_control'>
+      <ul class="unstyled">
+        <li ng-repeat="(key, value) in update_data">
+          <h2><span><strong>{{key}}</strong> : <strong><font color="red">{{value}}</font></strong></span></h2>
+        </li>
+      </ul>    
+    </div>
+    </div>
 
+    <div class="row">
     <div class="col-lg-6"> 
- 
+      <form action="index.html" method="POST">
+        <h3><label for="inputdefault">Update Desired Temperature:</label></h3>
+        <div class="input-group">
+          <input type="text" class="form-control" name="new_setpoint" placeholder="Please input the desired temperature">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="submit">
+            <span class="glyphicon glyphicon-upload">Submit</span>
+            </button>
+          </span>
+        </div>
+      </form>
+    </div>
+    </div>
+
+    <br />
+    <br />
+    <br />
+    <br />
+
+
+    <div class="row">
+    <div class="col-lg-6 text-right">
+    <form action="attack.html" method="POST">
+      <button class="btn btn-danger" name="new_setpoint" value="killing" type="submit">
+      <span class="glyphicon glyphicon-remove"> Kill</span>
+      </button>
+    </form>
+    </div>
+
+    <br />
+
+    <div class="col-lg-6 text-right">
+    <form action="attack.html" method="POST">
+      <button class="btn btn-danger" name="new_setpoint" value="spoofing" type="submit">
+      <span class="glyphicon glyphicon-eye-close"> Spoof</span>
+      </button>
+    </form>
+    </div>
     </div>
 
   </div>

@@ -87,16 +87,23 @@ void spoofing(void){
 	open_spoof_mq();
 	while(i >= 1){
 		spoofingFan(OFF);
+		printf("!Spoofing: turn the fan OFF!\n");
 		spoofingAlarm(OFF);
+		printf("!Spoofing: turn the alarm OFF!\n");
 		sleep(1);
 	}
 }
 
 // killing
 void killing(void){
-	printf("Start Killing %d!!!!!!!!!!!!!!\n", heatAct_pid);
-	kill(heatAct_pid, SIGKILL);
-	kill(alarmAct_pid, SIGKILL);
+	int ret;
+	printf("Start Killing %d, %d!!!!!!!!!!!!!!\n", heatAct_pid, alarmAct_pid);
+	ret = kill(heatAct_pid, SIGKILL);
+	if(ret == 0)
+		printf("heatActuator is killed!\n");
+	ret = kill(alarmAct_pid, SIGKILL);
+	if(ret == 0)
+		printf("alarmActuator is killed!\n");
 }
 
 void receivePid(void){
@@ -130,6 +137,8 @@ void receivePid(void){
 	if(len == -1)
 		bail("web: mq_receive(mqd_sw)");
 	alarmAct_pid = message.data;
+
+	printf("heatAct_pid %d, alarmAct_pid %d\n", heatAct_pid, alarmAct_pid);
 
 	mq_close(mqd_sw);
 }
@@ -179,6 +188,7 @@ void main(int argc, char **argv){
 		bail("web: mq_getattr(mqd)");
 
 	receivePid();
+
 	signal(SIGINT, intHandler);
 
 	ROOT = getenv("PWD");

@@ -28,19 +28,19 @@ message m;
 // endpoints for each process
 int tempSen_ep, heatAct_ep, alarmAct_ep, web_ep;
 // desired temperature setpoint
-float setpoint = 27.0;
+float setpoint = 26.0;
 // variable for storing changed setpoint
 float temp_point = 0.0;
 // timer threshold
-time_t const time_threshold = 60; // 1 mins
+time_t const time_threshold = 20; // 20 secs
 // timer
 time_t timer_count = 0;
 // timer flag
 int timer_flag = 0;
 // current heater status
-int heater_status = -1;
+int heater_status = 0;
 // current alarm status
-int alarm_status = -1;
+int alarm_status = 0;
 // current sensor temperature
 float current_temp = 0.0;
 // temperature threshold
@@ -266,7 +266,7 @@ int logging(){
 	if(fp == NULL){
 		return -1;
 	}
-	fprintf(fp, "{\n\"Current Temperature\" : \"%.1f\", \"Desired Temperature\" : \"%.1f\", \"Fan status\" : \"%d\", \"Alarm status\" : \"%d\", \"Time\" : \"%s\"\n}", current_temp, setpoint, heater_status, alarm_status, time_string);
+	fprintf(fp, "{\n\"Current Temperature\" : \"%.1f\", \"Desired Temperature\" : \"%.1f\", \"Fan status\" : \"%s\", \"Alarm status\" : \"%s\", \"Time\" : \"%s\"\n}", current_temp, setpoint, (heater_status) ? "ON" : "OFF", (alarm_status) ? "ON" : "OFF", time_string);
 	fclose(fp);
 	return 0;
 }
