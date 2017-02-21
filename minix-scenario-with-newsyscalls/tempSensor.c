@@ -55,7 +55,7 @@ void retrieveSensorData(){
 			bail("start()");
 	
 	// simulate periodic arriving of sensor data
-	sleep(4);
+	sleep(3);
 
 	// if(sensordata[i] == -1)
 	// 	exit(1);

@@ -316,8 +316,8 @@ void main(int argc, char **argv){
 		}
 		else if(control_flag == -1 || control_flag == 1){
 			// too cold (-1) or too hot (1)
-			if(control_flag == -1)
-				controlFan(OFF);
+			// if(control_flag == -1)
+			// 	controlFan(OFF);
 			if(control_flag == 1)
 				controlFan(ON);
 
