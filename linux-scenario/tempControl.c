@@ -125,33 +125,43 @@ void check_timer(){
 // communicate with heater
 int mq_send_heater(int command){
 	int status, len, prio; 
-	message_ch = (Msg) {HEATER_COMMAND, command};
-	status = mq_send(mqd_ch, (const char *) &message_ch, sizeof(message_ch), 0);
-	if(status != OK)
-		return status;
 
-	len = mq_receive(mqd_hc, (char *) &message_hc, attr_hc.mq_msgsize, &prio);
-	if(len == -1)
-		return -1;
-	if(message_hc.type == HEATER_CONFIRM)
-		heater_data = message_hc.data;
+	if(heater_data != command){
+		message_ch = (Msg) {HEATER_COMMAND, command};
+		status = mq_send(mqd_ch, (const char *) &message_ch, sizeof(message_ch), 0);
+			if(status != OK)
+				return status;
+
+		sleep(0.2);
+
+		len = mq_receive(mqd_hc, (char *) &message_hc, attr_hc.mq_msgsize, &prio);
+		if(len == -1)
+			return -1;
+		if(message_hc.type == HEATER_CONFIRM)
+			heater_data = message_hc.data;
+	}
 	return 0;
 }
 
 // communicate with alarm
 int mq_send_alarm(int command){
 	int status, len, prio;
-	message_ca = (Msg) {ALARM_COMMAND, command};
 
-	status = mq_send(mqd_ca, (const char *) &message_ca, sizeof(message_ca), 0);
-	if(status != OK)
-		return status;
+	if(alarm_data != command){
+		message_ca = (Msg) {ALARM_COMMAND, command};
 
-	len = mq_receive(mqd_ac, (char *) &message_ac, attr_ac.mq_msgsize, &prio);
-	if(len == -1)
-		return -1;
-	if(message_ac.type == ALARM_CONFIRM)
-		alarm_data = message_ac.data;
+		status = mq_send(mqd_ca, (const char *) &message_ca, sizeof(message_ca), 0);
+		if(status != OK)
+			return status;
+
+		sleep(0.2);
+
+		len = mq_receive(mqd_ac, (char *) &message_ac, attr_ac.mq_msgsize, &prio);
+		if(len == -1)
+			return -1;
+		if(message_ac.type == ALARM_CONFIRM)
+			alarm_data = message_ac.data;
+	}
 	return 0;
 }
 
@@ -169,8 +179,8 @@ void control_start(void){
 		if(delta > threshold){
 			printf("tempControl: we need to turn the fan ON\n");
 			status = mq_send_heater(ON);
-			if(status != OK)
-				bail("mq_send_heater(ON)");
+			// if(status != OK)
+			// 	bail("mq_send_heater(ON)");
 			check_timer();
 		}
 		else{
@@ -179,8 +189,8 @@ void control_start(void){
 				timestamp_s = 0;
 				printf("tempControl: we need turn the alarm OFF\n");
 				status = mq_send_alarm(OFF);
-				if(status != OK)
-					bail("mq_send_heater(OFF)");
+				// if(status != OK)
+				// 	bail("mq_send_heater(OFF)");
 			}
 		}
 	}
@@ -191,8 +201,8 @@ void control_start(void){
 		if(delta > threshold){
 			printf("tempControl: we need to turn the fan OFF\n");
 			status = mq_send_heater(OFF);
-			if(status != OK)
-				bail("mq_send_heater(OFF)");
+			// if(status != OK)
+			// 	bail("mq_send_heater(OFF)");
 			// check_timer();
 		}
 		// else{

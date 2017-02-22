@@ -34,10 +34,13 @@ mqd_t mqd;
 mqd_t mqd_sw;
 mqd_t mqd_spoof_fan;
 mqd_t mqd_spoof_alarm;
+mqd_t mqd_spoof_tc_heat;
+mqd_t mqd_spoof_tc_alarm;
 Msg message;
 int tempSen_pid, tempCnt_pid, heatAct_pid, alarmAct_pid;
 static volatile int keepRunning = 1;
 int pid[5];
+struct mq_attr attr;
 
 void startServer(char *);
 void respond(int);
@@ -48,11 +51,27 @@ static void bail(const char *on_what) {
 	exit(1); 
 }
 
+void spoofingTcHeat(int command){
+	int status, len, prio;
+	Msg message_spoofing;
+	message_spoofing = (Msg) {HEATER_CONFIRM, command};
+	status = mq_send(mqd_spoof_tc_heat, (const char *) &message_spoofing, sizeof(message_spoofing), 0);
+}
+
+void spoofingTcAlarm(int command){
+	int status, len, prio;
+	Msg message_spoofing;
+	message_spoofing = (Msg) {ALARM_CONFIRM, command};
+	status = mq_send(mqd_spoof_tc_alarm, (const char *) &message_spoofing, sizeof(message_spoofing), 0);
+}
+
 void spoofingFan(int command){
 	int status, len, prio;
 	Msg message_spoofing;
 	message_spoofing = (Msg) {HEATER_COMMAND, command};
 	status = mq_send(mqd_spoof_fan, (const char *) &message_spoofing, sizeof(message_spoofing), 0);
+
+	len = mq_receive(mqd_spoof_tc_heat, (char *) &message_spoofing, attr.mq_msgsize, &prio);
 }
 
 void spoofingAlarm(int command){
@@ -60,12 +79,14 @@ void spoofingAlarm(int command){
 	Msg message_spoofing;
 	message_spoofing = (Msg) {ALARM_COMMAND, command};
 	status = mq_send(mqd_spoof_alarm, (const char *) &message_spoofing, sizeof(message_spoofing), 0);
+
+	len = mq_receive(mqd_spoof_tc_alarm, (char *) &message_spoofing, attr.mq_msgsize, &prio);
 }
 
 // open spoofing mq
 void open_spoof_mq(void){
 	int rwflag = O_RDWR;
-	struct mq_attr attr;
+	
 
 	mqd_spoof_fan = mq_open("/cnt-heat", rwflag);
 	if(mqd_spoof_fan == (mqd_t) -1 )
@@ -78,20 +99,33 @@ void open_spoof_mq(void){
 		bail("mq_open(/cnt-alarm)");
 	if (mq_getattr(mqd_spoof_alarm, &attr) == -1)
 		bail("mq_getattr(mqd_spoof_alarm)");
+
+	mqd_spoof_tc_heat = mq_open("/heat-cnt", rwflag);
+	if(mqd_spoof_tc_heat == (mqd_t) -1 )
+		bail("mq_open(/heat-cnt)");
+
+	mqd_spoof_tc_alarm = mq_open("/alarm-cnt", rwflag);
+	if(mqd_spoof_tc_alarm == (mqd_t) -1 )
+		bail("mq_open(/alarm-cnt)");
 }
 
 // spoofing
 void spoofing(void){
-	int i = 100;
+	int i = 50;
 	printf("Start Spoofing !!!!!!!!!!!!!!\n");
 	open_spoof_mq();
 	while(i >= 1){
 		spoofingFan(OFF);
+		spoofingTcHeat(ON);
 		printf("!Spoofing: turn the fan OFF!\n");
 		spoofingAlarm(OFF);
+		spoofingTcAlarm(ON);
 		printf("!Spoofing: turn the alarm OFF!\n");
 		sleep(1);
 	}
+	mq_close(mqd_spoof_tc_heat);
+	mq_close(mqd_spoof_tc_alarm);
+
 }
 
 // killing

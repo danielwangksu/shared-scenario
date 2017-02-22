@@ -308,20 +308,20 @@ void main(int argc, char **argv){
 
 		printf("TEMPCONTROL: control_flag %d\n", control_flag);
 
-		if(control_flag  == OK){
+		if(control_flag  == OK || control_flag == -1){
 			// temperature within desired range
 			stop_timer();
 			if(alarm_status == ON)
 				controlAlarm(OFF);
 		}
-		else if(control_flag == -1 || control_flag == 1){
+		if(control_flag == -1 || control_flag == 1){
 			// too cold (-1) or too hot (1)
-			// if(control_flag == -1)
-			// 	controlFan(OFF);
+			if(control_flag == -1)
+				controlFan(OFF);
 			if(control_flag == 1)
 				controlFan(ON);
 
-			if(timer_flag != 1){
+			if(timer_flag != 1 && control_flag == 1){
 				start_timer();
 			}
 			else if(timer_flag == 1 && check_timer()){
